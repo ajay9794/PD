@@ -14,8 +14,7 @@
 <?import javafx.scene.paint.LinearGradient?>
 <?import javafx.scene.paint.Stop?>
 
-
-<HBox fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1">
+<HBox fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.micro.pd.controller.AgentController">
    <children>
       <VBox prefHeight="600.0" prefWidth="99.0" style="-fx-background-color: #f9f9f9;">
          <children>
@@ -32,17 +31,17 @@
       </VBox>
       <Pane prefHeight="600.0" prefWidth="504.0">
          <children>
-            <MFXTextField floatMode="ABOVE" floatingText="Password" layoutX="201.0" layoutY="111.0" prefHeight="48.0" prefWidth="173.0" />
-            <MFXTextField alignment="TOP_LEFT" floatMode="ABOVE" floatingText="Agency" floatingTextGap="6.0" layoutX="13.0" layoutY="33.0" prefHeight="48.0" prefWidth="173.0" />
-            <MFXTextField floatMode="ABOVE" floatingText="Username" layoutX="13.0" layoutY="111.0" prefHeight="48.0" prefWidth="173.0" />
-            <MFXTextField floatMode="ABOVE" floatingText="Agency Name" layoutX="201.0" layoutY="33.0" prefHeight="48.0" prefWidth="173.0" />
+            <MFXTextField fx:id="password" floatMode="ABOVE" floatingText="Password" layoutX="201.0" layoutY="111.0" prefHeight="48.0" prefWidth="173.0" />
+            <MFXTextField fx:id="agency" alignment="TOP_LEFT" floatMode="ABOVE" floatingText="Agency" floatingTextGap="6.0" layoutX="13.0" layoutY="33.0" prefHeight="48.0" prefWidth="173.0" />
+            <MFXTextField fx:id="username" floatMode="ABOVE" floatingText="Username" layoutX="13.0" layoutY="111.0" prefHeight="48.0" prefWidth="173.0" />
+            <MFXTextField fx:id="agency_name" floatMode="ABOVE" floatingText="Agency Name" layoutX="201.0" layoutY="33.0" prefHeight="48.0" prefWidth="173.0" />
             <DatePicker layoutX="201.0" layoutY="176.0" prefHeight="36.0" prefWidth="173.0" showWeekNumbers="true" />
             <Label layoutX="79.0" layoutY="186.0" text="Date Of Birth" />
             <DatePicker layoutX="201.0" layoutY="219.0" prefHeight="36.0" prefWidth="173.0" showWeekNumbers="true" />
             <DatePicker layoutX="201.0" layoutY="264.0" prefHeight="36.0" prefWidth="173.0" showWeekNumbers="true" />
             <Label layoutX="79.0" layoutY="274.0" text="To Date" />
             <Label layoutX="79.0" layoutY="229.0" text="From Date" />
-            <MFXButton disable="true" layoutX="77.0" layoutY="325.0" prefHeight="35.0" prefWidth="250.0" text="Register MPIN" textAlignment="CENTER">
+            <MFXButton layoutX="77.0" layoutY="325.0" onAction="#onButtonClick" prefHeight="35.0" prefWidth="250.0" text="Register MPIN" textAlignment="CENTER">
                <rippleColor>
                   <LinearGradient endX="1.0" endY="1.0">
                      <stops>
