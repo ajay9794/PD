@@ -7,68 +7,116 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.paint.Color?>
 <?import javafx.scene.paint.LinearGradient?>
 <?import javafx.scene.paint.Stop?>
+<?import javafx.scene.text.Font?>
 
 <HBox fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.micro.pd.controller.AgentController">
    <children>
-      <VBox prefHeight="600.0" prefWidth="99.0" style="-fx-background-color: #f9f9f9;">
+      <VBox fx:id="leftSideVBox" prefHeight="600.0" prefWidth="143.0" style="-fx-background-color: #f9f9f9;">
          <children>
             <Pane prefHeight="60.0" prefWidth="60.0">
                <children>
-                  <ImageView fitHeight="36.0" fitWidth="72.0" layoutX="31.0" layoutY="12.0" pickOnBounds="true" preserveRatio="true">
+                  <ImageView fitHeight="36.0" fitWidth="72.0" layoutX="17.0" layoutY="12.0" pickOnBounds="true" preserveRatio="true">
                      <image>
-                        <Image url="@../../../../../images/home.png" />
+<!--                        <Image url="@/images/home.png" />-->
                      </image>
                   </ImageView>
                </children>
             </Pane>
          </children>
       </VBox>
-      <Pane prefHeight="600.0" prefWidth="504.0">
+      <VBox fx:id="middleVBox" layoutX="10.0" layoutY="10.0" prefHeight="650.0" prefWidth="550.0" style="-fx-background-color: #f9f9f9;">
          <children>
-            <MFXTextField fx:id="password" floatMode="ABOVE" floatingText="Password" layoutX="201.0" layoutY="111.0" prefHeight="48.0" prefWidth="173.0" />
-            <MFXTextField fx:id="agency" alignment="TOP_LEFT" floatMode="ABOVE" floatingText="Agency" floatingTextGap="6.0" layoutX="13.0" layoutY="33.0" prefHeight="48.0" prefWidth="173.0" />
-            <MFXTextField fx:id="username" floatMode="ABOVE" floatingText="Username" layoutX="13.0" layoutY="111.0" prefHeight="48.0" prefWidth="173.0" />
-            <MFXTextField fx:id="agency_name" floatMode="ABOVE" floatingText="Agency Name" layoutX="201.0" layoutY="33.0" prefHeight="48.0" prefWidth="173.0" />
-            <DatePicker layoutX="201.0" layoutY="176.0" prefHeight="36.0" prefWidth="173.0" showWeekNumbers="true" />
-            <Label layoutX="79.0" layoutY="186.0" text="Date Of Birth" />
-            <DatePicker layoutX="201.0" layoutY="219.0" prefHeight="36.0" prefWidth="173.0" showWeekNumbers="true" />
-            <DatePicker layoutX="201.0" layoutY="264.0" prefHeight="36.0" prefWidth="173.0" showWeekNumbers="true" />
-            <Label layoutX="79.0" layoutY="274.0" text="To Date" />
-            <Label layoutX="79.0" layoutY="229.0" text="From Date" />
-            <MFXButton layoutX="77.0" layoutY="325.0" onAction="#onButtonClick" prefHeight="35.0" prefWidth="250.0" text="Register MPIN" textAlignment="CENTER">
-               <rippleColor>
-                  <LinearGradient endX="1.0" endY="1.0">
-                     <stops>
-                        <Stop>
-                           <color>
-                              <Color />
-                           </color>
-                        </Stop>
-                        <Stop offset="1.0">
-                           <color>
-                              <Color red="1.0" green="1.0" blue="1.0" />
-                           </color>
-                        </Stop>
-                     </stops>
-                  </LinearGradient>
-               </rippleColor>
-            </MFXButton>
-            <MFXButton layoutX="77.0" layoutY="414.0" prefHeight="35.0" prefWidth="250.0" text="Update **** Policy" textAlignment="CENTER" />
-            <MFXButton layoutX="77.0" layoutY="368.0" prefHeight="35.0" prefWidth="250.0" text="NB Download" textAlignment="CENTER" />
-            <MFXButton layoutX="77.0" layoutY="506.0" prefHeight="35.0" prefWidth="250.0" text="Update FUP" textAlignment="CENTER" />
-            <MFXButton layoutX="77.0" layoutY="460.0" prefHeight="35.0" prefWidth="250.0" text="Address And Nominee Update" textAlignment="CENTER" />
-            <MFXProgressSpinner layoutX="183.0" layoutY="322.0" prefHeight="41.0" prefWidth="37.0" />
-            <MFXProgressSpinner layoutX="184.0" layoutY="411.0" prefHeight="41.0" prefWidth="37.0" />
-            <MFXProgressSpinner layoutX="184.0" layoutY="457.0" prefHeight="41.0" prefWidth="37.0" />
-            <MFXProgressSpinner layoutX="184.0" layoutY="503.0" prefHeight="41.0" prefWidth="37.0" />
-            <MFXProgressSpinner layoutX="184.0" layoutY="365.0" prefHeight="41.0" prefWidth="37.0" />
+            <AnchorPane prefHeight="600.0" prefWidth="499.0">
+               <children>
+                  <Pane fx:id="middlePage" layoutX="-15.0" prefHeight="600.0" prefWidth="529.0">
+                     <children>
+                        <MFXTextField fx:id="agency" alignment="TOP_LEFT" floatMode="ABOVE" floatingText="Agency" floatingTextGap="6.0" layoutX="41.0" layoutY="66.0" prefHeight="48.0" prefWidth="173.0" />
+                        <MFXTextField fx:id="agencyName" floatMode="ABOVE" floatingText="Agency Name" layoutX="229.0" layoutY="66.0" prefHeight="48.0" prefWidth="173.0" />
+                        <MFXTextField fx:id="username" floatMode="ABOVE" floatingText="Username" layoutX="41.0" layoutY="144.0" prefHeight="48.0" prefWidth="173.0" />
+                        <MFXTextField fx:id="password" floatMode="ABOVE" floatingText="Password" layoutX="229.0" layoutY="144.0" prefHeight="48.0" prefWidth="173.0" />
+                        <MFXButton layoutX="101.0" layoutY="334.0" onAction="#onButtonClick" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="Register MPIN" textAlignment="CENTER" textFill="WHITE">
+                           <rippleColor>
+                              <LinearGradient endX="1.0" endY="1.0">
+                                 <stops>
+                                    <Stop>
+                                       <color>
+                                          <Color />
+                                       </color>
+                                    </Stop>
+                                    <Stop offset="1.0">
+                                       <color>
+                                          <Color red="1.0" green="1.0" blue="1.0" />
+                                       </color>
+                                    </Stop>
+                                 </stops>
+                              </LinearGradient>
+                           </rippleColor>
+                           <font>
+                              <Font size="15.0" />
+                           </font>
+                        </MFXButton>
+                        <MFXButton layoutX="101.0" layoutY="423.0" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="Update **** Policy" textAlignment="CENTER" textFill="WHITE">
+                           <font>
+                              <Font size="15.0" />
+                           </font></MFXButton>
+                        <MFXButton layoutX="101.0" layoutY="377.0" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="NB Download" textAlignment="CENTER" textFill="WHITE">
+                           <font>
+                              <Font size="15.0" />
+                           </font></MFXButton>
+                        <MFXButton layoutX="101.0" layoutY="515.0" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="Update FUP" textAlignment="CENTER" textFill="WHITE">
+                           <font>
+                              <Font size="15.0" />
+                           </font>
+                        </MFXButton>
+                        <MFXButton layoutX="101.0" layoutY="469.0" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="Address And Nominee Update" textAlignment="CENTER" textFill="WHITE">
+                           <font>
+                              <Font size="15.0" />
+                           </font></MFXButton>
+                        <Label fx:id="welcomeText" layoutX="118.0" layoutY="24.0" prefHeight="17.0" prefWidth="222.0" />
+                        <DatePicker fx:id="strDOB" layoutX="226.0" layoutY="215.0" promptText="Date Of Birth" style="-fx-background-color: white;" />
+                        <Label layoutX="41.0" layoutY="219.0" prefHeight="18.0" prefWidth="173.0" text="Date OF Birth" />
+                        <DatePicker fx:id="strFromDate" layoutX="226.0" layoutY="257.0" promptText="From Date" style="-fx-background-color: white;" />
+                        <Label layoutX="41.0" layoutY="261.0" prefHeight="18.0" prefWidth="173.0" text="From Date" />
+                        <DatePicker fx:id="strToDate" layoutX="226.0" layoutY="300.0" promptText="To Date" style="-fx-background-color: white;" />
+                        <Label layoutX="41.0" layoutY="304.0" prefHeight="18.0" prefWidth="173.0" text="To Date" />
+                     </children>
+                  </Pane>
+                  <Pane fx:id="popupPage" prefHeight="600.0" prefWidth="529.0" style="-fx-background-color: white;" visible="false">
+                     <children>
+                        <Label fx:id="popupLabelMessage"  layoutX="127.0" layoutY="45.0" prefHeight="35.0" prefWidth="257.0" />
+                        <MFXTextField fx:id="otpText" alignment="TOP_LEFT" floatMode="ABOVE" floatingText="Enter OTP !" layoutX="152.0" layoutY="97.0" prefHeight="68.0" prefWidth="207.0" promptText="OTP" style="-fx-background-color: white;" />
+                        <MFXButton fx:id="otpSubmitButton" buttonType="RAISED" layoutX="220.0" layoutY="196.0" onAction="#onOTPSubmitButtonClick" prefHeight="35.0" prefWidth="71.0" rippleColor="WHITE" style="-fx-background-color: #1976d2;" text="Submit" textAlignment="CENTER" textFill="WHITE" />
+                        <MFXButton layoutX="461.0" layoutY="14.0" onAction="#onClickClosePopup" style="-fx-background-color: white;" text="X">
+                           <font>
+                              <Font name="System Bold" size="15.0" />
+                           </font>
+                        </MFXButton>
+                     </children>
+                  </Pane>
+                  <StackPane fx:id="spinner" prefHeight="600.0" prefWidth="529.0" visible="false">
+                     <!-- Background overlay -->
+                     <StackPane style="-fx-background-color: rgba(169, 169, 169, 0.5);">
+                        <AnchorPane>
+                           <children>
+                              <MFXButton layoutX="461.0" layoutY="14.0" text="close" />
+                              <!-- Spinner -->
+                              <MFXProgressSpinner layoutX="240.0" layoutY="275.0" />
+                              <Label fx:id="requestMessage" layoutX="105.0" layoutY="213.0" prefHeight="25.0" prefWidth="319.0" />
+                           </children>
+                        </AnchorPane>
+                     </StackPane>
+                  </StackPane>
+               </children>
+            </AnchorPane>
          </children>
-      </Pane>
+      </VBox>
    </children>
 </HBox>
