@@ -8,6 +8,7 @@ import javafx.stage.Stage;
 import javax.crypto.Cipher;
 import java.io.File;
 import java.io.FilenameFilter;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
@@ -101,4 +102,99 @@ public class Constants {
 			return false;
 		}
 	}
+//	public static String decodeResponse(String paramString)
+//			throws Exception {
+//		return decode(reverseString(decode(paramString)));
+//	}
+//
+//	public static String encodeResponse(String paramString)
+//			throws Exception {
+//		return encode(reverseString(encode(paramString)));
+//	}
+//
+//	public static String encode(String paramString) {
+//		byte[] data = Base64.getEncoder().encode(paramString.getBytes());
+//		String str2 = new String(data, StandardCharsets.UTF_8);
+//		return str2;
+//	}
+//
+//	// ERROR //
+//	public static String decode(String paramString) {
+//
+//		byte[] data = Base64.getDecoder().decode(paramString);
+//		String str2 = new String(data, StandardCharsets.UTF_8);
+//		return str2;
+//	}
+//
+//	public static String reverseString(String paramString) {
+//		if (paramString.length() > 0) {
+//			StringBuilder localStringBuilder = new StringBuilder();
+//			localStringBuilder.append(paramString);
+//			return localStringBuilder.reverse().toString();
+//		}
+//		return "";
+//	}
+
+	public static String getYYYMMDD(String paramString) {
+		try {
+			StringBuilder localStringBuilder = new StringBuilder();
+			localStringBuilder.append(paramString.substring(6, 10).toString());
+			localStringBuilder.append("-");
+			localStringBuilder.append(paramString.substring(3, 5).toString());
+			localStringBuilder.append("-");
+			localStringBuilder.append(paramString.substring(0, 2).toString());
+			paramString = localStringBuilder.toString();
+		} catch (Exception localException) {
+		}
+		return paramString;
+	}
+	public static String getDDMMYYYY(String paramString) {
+		try {
+			StringBuilder localStringBuilder = new StringBuilder();
+			localStringBuilder.append(paramString.substring(8, 10).toString());
+			localStringBuilder.append("/");
+			localStringBuilder.append(paramString.substring(5, 7).toString());
+			localStringBuilder.append("/");
+			localStringBuilder.append(paramString.substring(0, 4).toString());
+			paramString = localStringBuilder.toString();
+		} catch (Exception localException) {
+		}
+		return paramString;
+	}
+
+	public static String decodeResponse(String paramString)
+			throws Exception {
+		return decode(reverseString(decode(paramString)));
+	}
+
+	public static String encodeResponse(String paramString)
+			throws Exception {
+		return encode(reverseString(encode(paramString)));
+	}
+
+	public static String encode(String paramString) {
+		byte[] data = Base64.getEncoder().encode(paramString.getBytes());
+
+//		byte[] data = Base64.encode(paramString.getBytes(), Base64.DEFAULT);
+		String str2 = new String(data, StandardCharsets.UTF_8).replaceAll("[\\n\\r]", "");
+		return str2;
+	}
+
+	// ERROR //
+	public static String decode(String paramString) {
+		byte[] data = Base64.getDecoder().decode(paramString);
+//		byte[] data = Base64.decode(paramString, Base64.DEFAULT);
+		String str2 = new String(data, StandardCharsets.UTF_8).replaceAll("[\\n\\r]", "");;
+		return str2;
+	}
+
+	public static String reverseString(String paramString) {
+		if (paramString.length() > 0) {
+			StringBuilder localStringBuilder = new StringBuilder();
+			localStringBuilder.append(paramString);
+			return localStringBuilder.reverse().toString();
+		}
+		return "";
+	}
+
 }

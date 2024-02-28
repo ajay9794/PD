@@ -19,7 +19,6 @@ public class PdApplication extends Application {
             primaryStage.setScene(scene);
             primaryStage.show();
         } catch (IOException e) {
-            // Print the details of the underlying exception
             Throwable cause = e.getCause();
             if (cause != null) {
                 cause.printStackTrace();
@@ -27,18 +26,6 @@ public class PdApplication extends Application {
                 e.printStackTrace();
             }
         }
-//        Parent root = fxmlLoader.load();
-//
-//        // Set the controller for the main scene (assuming MainController as an example)
-//        AgentController mainController = fxmlLoader.getController();
-//
-//        // Additional setup and configuration if needed
-//
-//        // Show the main scene
-//        Scene scene = new Scene(root);
-//        primaryStage.setScene(scene);
-//        primaryStage.setTitle("Your JavaFX Application");
-//        primaryStage.show();
     }
 
     public static void main(String[] args) {
