@@ -5,6 +5,7 @@ import com.micro.pd.modelDTO.ResponseDto;
 import org.json.JSONObject;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public interface AgentService {
     ResponseDto logIn(Agency agencyDetails);
@@ -14,4 +15,6 @@ public interface AgentService {
     ResponseDto downloadPolicyList(Agency selectedAgency, ResponseDto asyncResponse);
 
     ResponseDto updateMaskedPolicyNumber(ResponseDto asyncResponse);
+
+    List<Agency> getAgencyStoredData();
 }

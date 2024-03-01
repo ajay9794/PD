@@ -11,6 +11,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class AgentServiceImpl implements AgentService {
@@ -151,8 +152,6 @@ public class AgentServiceImpl implements AgentService {
             Request request = new Request.Builder()
                     .url(getURL)
                     .post(body)
-
-
                     .addHeader("accept-encryption", "EDB")
                     .addHeader("LOCALE", "IN_En")
                     .addHeader("Referer", "https://mbiz.licindia.in/AgentPortal/")
@@ -160,11 +159,9 @@ public class AgentServiceImpl implements AgentService {
                     .addHeader("Host", "mbiz.licindia.in")
                     //Notice this request has header if you don't need to send a header just erase this part
                     .build();
-            String str1="";
 
             Response response = client.newCall(request).execute();
             String token = response.body().string().replaceAll("[\\n\\r]", "");
-
 
             String str= Constants.decodeResponse(token);
 
@@ -200,8 +197,8 @@ public class AgentServiceImpl implements AgentService {
             String str1 = String.valueOf(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()));
             String str2 = URLEncoder.encode(Constants.Encrypt("doc", Constants.key), "utf-8");
 
-            String str3 = URLEncoder.encode(Constants.Encrypt(Constants.getYYYMMDD(selectedAgency.getFromDate()),  Constants.key), "utf-8");
-            String str4 = URLEncoder.encode(Constants.Encrypt(Constants.getYYYMMDD(selectedAgency.getToDate()),  Constants.key), "utf-8");
+            String str3 = URLEncoder.encode(Constants.Encrypt(selectedAgency.getFromDate(),  Constants.key), "utf-8");
+            String str4 = URLEncoder.encode(Constants.Encrypt(selectedAgency.getToDate(),  Constants.key), "utf-8");
             StringBuilder localStringBuilder = new StringBuilder();
             //  localStringBuilder.append("https://ebiz.licindia.in/BFFService/policyenquiry/policysearch?_dc=");
             localStringBuilder.append("https://mbiz.licindia.in/AgentBFFService/agents/policysearch?_dc=");
@@ -219,8 +216,6 @@ public class AgentServiceImpl implements AgentService {
 
             Request request = new Request.Builder()
                     .url(localStringBuilder.toString())
-
-
                     .addHeader("accept-encryption", "EDB")
                     .addHeader("LOCALE", "IN_En")
                     .addHeader("Referer", "https://mbiz.licindia.in/AgentPortal/")
@@ -232,15 +227,22 @@ public class AgentServiceImpl implements AgentService {
             Response response = client.newCall(request).execute();
             String token = response.body().string().replaceAll("[\\n\\r]", "");
             String resultString =  Constants.decodeResponse(token);
-            // here we need to store data in database table "policy calender"
             /** success download policy details **/
             asyncResponse.setDownloadPolicyResponseJson(new JSONObject(resultString));
             asyncResponse.setIsError(false);
+            JSONArray policyList = new JSONObject(resultString).optJSONArray("policySearch");
+            this.savePolicyData(policyList);
         } catch (Exception e) {
-
+            asyncResponse.setIsError(true);
+            if(e.getMessage().toString().equalsIgnoreCase("timeout")){
+                asyncResponse.setDetailsMessage("socket");
+            } else {
+                asyncResponse.setDetailsMessage("error");
+            }
         }
         return asyncResponse;
     }
+
 
     @Override
     public ResponseDto updateMaskedPolicyNumber(ResponseDto asyncResponse) {
@@ -262,31 +264,33 @@ public class AgentServiceImpl implements AgentService {
                     .build();
             Response response = client.newCall(request).execute();
             String token = response.body().string().replaceAll("[\\n\\r]", "");
-            String result =  Constants.decodeResponse(token);
+            String resultString =  Constants.decodeResponse(token);
 
-            boolean bool1 = result.contains("200");
+            boolean bool1 = resultString.contains("200");
             if(bool1) {
-
-                JSONArray localJSONArray = new JSONObject(result).optJSONArray("policies");
-                int j = 0;
-
-                for (j = 0; j < localJSONArray.length(); j++) {
-                    JSONObject localJSONObject = localJSONArray.getJSONObject(j);
-                    String policyno = localJSONObject.getString("policyNumber").replace("\n", "").substring(5);
-                    String plan = localJSONObject.getString("plan").replace("\n", "");
-                    String term = localJSONObject.getString("policyTerm").replace("\n", "");
-//                    String fupdate = "pdk", localJSONObject.getString("nextFup").replace("\n", "");
-                    String sum = localJSONObject.getString("sumAssured").replace("\n", "");
-                }
+                asyncResponse.setUpdateMaskedPolicyNumberResponseJson(new JSONObject(resultString));
+                asyncResponse.setIsError(false);
+                JSONArray policyList = new JSONObject(resultString).optJSONArray("policies");
+                this.updatePolicyData(policyList);
             }
-            asyncResponse.setUpdateMaskedPolicyNumberResponseJson(new JSONObject(result));
-            asyncResponse.setIsError(false);
         } catch(Exception e) {
-
+            asyncResponse.setIsError(false);
+            asyncResponse.setDetailsMessage("error");
         }
         return asyncResponse;
     }
 
+    @Override
+    public List<Agency> getAgencyStoredData() {
+        return DatabaseHelper.getStoredAgency();
+    }
+
+    private void savePolicyData(JSONArray policyList) {
+        DatabaseHelper.savePolicyData(policyList);
+    }
+    private void updatePolicyData(JSONArray policyList) {
+        DatabaseHelper.updatePolicyData(policyList);
+    }
     public void saveAgencyData(Agency agencyDetails) {
         DatabaseHelper.insertAgencyData(agencyDetails);
     }
