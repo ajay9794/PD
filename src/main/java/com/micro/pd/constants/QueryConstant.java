@@ -17,6 +17,9 @@ public final class QueryConstant {
     /** The Constant GET_Table_Data */
     public static final String GET_Table_Data = "SELECT * FROM your_table_name";
 
+    /** The Constant GET_Table_Data */
+    public static final String GET_Agencies_Table_Data = "SELECT * FROM Agencies";
+
     /** The Constant Insert_Table_Data */
     public static final String Insert_Table_Agency_Data = "INSERT INTO Agencies (Agency, Username, Password, DOB, MPIN, MobileNo, MobileNoKey, UserKey) VALUES (?,?,?,?,?,?,?,?)";
 }

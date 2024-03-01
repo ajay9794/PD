@@ -1,7 +1,6 @@
 module com.micro.pd {
     requires javafx.controls;
     requires javafx.fxml;
-    requires com.dlsc.formsfx;
 
     // SQLite JDBC
     requires java.sql;
@@ -19,6 +18,7 @@ module com.micro.pd {
     requires VirtualizedFX;
 
     requires org.apache.commons.lang3;
+    requires org.apache.commons.collections4;
     requires lombok;
 
     opens com.micro.pd.controller to javafx.fxml;
