@@ -20,6 +20,13 @@ public final class QueryConstant {
     /** The Constant GET_Table_Data */
     public static final String GET_Agencies_Table_Data = "SELECT * FROM Agencies";
 
+    /** The Constant GET_Policy_calender_Table_Data */
+    public static final String GET_Policy_calender_Table_Data = "Select * from PolicyCalendar";
+
+    /** The Constant Get_Agency_Specific_Count */
+    public static final String Get_Agency_Specific_Count= "SELECT COUNT(*) from Agencies where Username = ?";
+
+
     /** The Constant Insert_Table_Data */
     public static final String Insert_Table_Agency_Data = "INSERT INTO Agencies (Agency, Username, Password, DOB, MPIN, MobileNo, MobileNoKey, UserKey) VALUES (?,?,?,?,?,?,?,?)";
 }

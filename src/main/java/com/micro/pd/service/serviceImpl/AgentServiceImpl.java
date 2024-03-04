@@ -6,11 +6,19 @@ import com.micro.pd.modelDTO.Agency;
 import com.micro.pd.modelDTO.ResponseDto;
 import com.micro.pd.service.AgentService;
 import okhttp3.*;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -26,20 +34,6 @@ public class AgentServiceImpl implements AgentService {
             localJSONObject1.put("captcha", "");
             localJSONObject1.put("dob", agencyDetails.getDateOfBirth() + "T00:00:00");
 
-//            localJSONObject1.put("userId", "0145393A");
-//            localJSONObject1.put("isMobileRequired", true);
-//            localJSONObject1.put("captcha", "");
-//            localJSONObject1.put("dob", "1989-05-01T00:00:00");
-
-//            localJSONObject1.put("dob", Constants.getYYYMMDD(agencyDetails.get)+"T00:00:00")
-//            JSONObject localJSONObject1 = new JSONObject();
-//            localJSONObject1.put("userId", agencyCode);
-//            localJSONObject1.put("isMobileRequired", true);
-//            localJSONObject1.put("captcha", "");
-//            StringBuilder localStringBuilder = new StringBuilder();
-//            localStringBuilder.append(Constants.getYYYMMDD(strDOB)+"T00:00:00");
-
-//            localJSONObject1.put("dob", localStringBuilder.toString());
             String encoder= Constants.encodeResponse(localJSONObject1.toString());
 
             String getURL =  "https://mbiz.licindia.in/BFFService/prelogin/forgot/generate";
@@ -51,7 +45,6 @@ public class AgentServiceImpl implements AgentService {
             Request request = new Request.Builder()
                     .url(getURL)
                     .post(body)
-
                     .addHeader("accept-encryption", "EDB")
                     .addHeader("LOCALE", "IN_En")
                     .addHeader("Referer", "https://mbiz.licindia.in/AgentPortal/")
@@ -115,21 +108,6 @@ public class AgentServiceImpl implements AgentService {
             responseObject.setLogInResponseJson(new JSONObject(responseStringJson));
             responseObject.setResponseString(responseStringJson);
             this.saveAgencyData(agencyDetails);
-//            String[] arrayOfString1 = str1.replace("{", "").replace("}", "").replace("\"", "").split(",");
-//
-//            for (int k = 0; k < arrayOfString1.length; k++) {
-//                String[] arrayOfString2 = arrayOfString1[k].split(":");
-//                if (arrayOfString2[0].contains("idamId"))
-//                    NBDownloadActivity.this.strAdamId = arrayOfString2[1];
-//
-//                else if (arrayOfString2[0].contains("mobileOTPReference"))
-//                    NBDownloadActivity.this.strOtpReference = arrayOfString2[1];
-//                else if (arrayOfString2[0].contains("mobileNo"))
-//                    NBDownloadActivity.this.mobileno = arrayOfString2[1];
-//                else if (arrayOfString2[0].contains("emailId"))
-//                    NBDownloadActivity.this.emailid = arrayOfString2[1];
-//
-//            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -164,7 +142,7 @@ public class AgentServiceImpl implements AgentService {
             String token = response.body().string().replaceAll("[\\n\\r]", "");
 
             String str= Constants.decodeResponse(token);
-
+            System.out.println(str);
             if (str.contains("Invalid OTP")) {
                 logInResponse.setDetailsMessage("Invalid OTP");
                 logInResponse.setIsError(true);
@@ -181,18 +159,18 @@ public class AgentServiceImpl implements AgentService {
         } catch(Exception e) {
             if ((e.getMessage().contains("Proxy Error") | e.getMessage().contains("Request Time-out"))){
                 logInResponse.setDetailsMessage("Proxy Error");
-                logInResponse.setIsError(true);
             } else {
                 logInResponse.setDetailsMessage(e.getMessage().toString());
-                logInResponse.setIsError(true);
             }
+            logInResponse.setErrorMessage("OTP validation error");
+            logInResponse.setIsError(true);
             e.printStackTrace();
         }
         return logInResponse;
     }
 
     @Override
-    public ResponseDto downloadPolicyList(Agency selectedAgency, ResponseDto asyncResponse) {
+    public ResponseDto downloadPolicyListOrUpdateFUP(Agency selectedAgency, ResponseDto asyncResponse, boolean updateFUP) {
         try{
             String str1 = String.valueOf(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()));
             String str2 = URLEncoder.encode(Constants.Encrypt("doc", Constants.key), "utf-8");
@@ -221,19 +199,22 @@ public class AgentServiceImpl implements AgentService {
                     .addHeader("Referer", "https://mbiz.licindia.in/AgentPortal/")
                     .addHeader("Channel", "TEST")
                     .addHeader("Host", "mbiz.licindia.in")
-                    .addHeader("Authorization", asyncResponse.getValidateOtpResponseJson().get("accesstoken").toString())
+                    .addHeader("Authorization", asyncResponse.getValidateOtpResponseJson().getString("accesstoken"))
                     //Notice this request has header if you don't need to send a header just erase this part
                     .build();
             Response response = client.newCall(request).execute();
             String token = response.body().string().replaceAll("[\\n\\r]", "");
             String resultString =  Constants.decodeResponse(token);
+            System.out.println(resultString);
             /** success download policy details **/
             asyncResponse.setDownloadPolicyResponseJson(new JSONObject(resultString));
             asyncResponse.setIsError(false);
             JSONArray policyList = new JSONObject(resultString).optJSONArray("policySearch");
-            this.savePolicyData(policyList);
+            this.savePolicyOrUpdateFupData(policyList, updateFUP);
         } catch (Exception e) {
+            e.printStackTrace();
             asyncResponse.setIsError(true);
+            asyncResponse.setErrorMessage(null);
             if(e.getMessage().toString().equalsIgnoreCase("timeout")){
                 asyncResponse.setDetailsMessage("socket");
             } else {
@@ -245,9 +226,8 @@ public class AgentServiceImpl implements AgentService {
 
 
     @Override
-    public ResponseDto updateMaskedPolicyNumber(ResponseDto asyncResponse) {
+    public ResponseDto updateMaskedPolicyNumber(Agency selectedAgency, ResponseDto asyncResponse) {
         try {
-
             StringBuilder localStringBuilder = new StringBuilder();
             localStringBuilder.append("https://mbiz.licindia.in/AgentBFFService/agents/allpolicies");
             OkHttpClient client = new OkHttpClient();
@@ -272,21 +252,260 @@ public class AgentServiceImpl implements AgentService {
                 asyncResponse.setIsError(false);
                 JSONArray policyList = new JSONObject(resultString).optJSONArray("policies");
                 this.updatePolicyData(policyList);
+                this.exportPolicyDataIntoJsonFile(selectedAgency.getUsername());
             }
         } catch(Exception e) {
             asyncResponse.setIsError(false);
+            asyncResponse.setErrorMessage(null);
             asyncResponse.setDetailsMessage("error");
+            e.printStackTrace();
         }
         return asyncResponse;
     }
+
+    @Override
+    public ResponseDto addressAndNomineeUpdate(Agency agencyDetails, ResponseDto oldResponse) {
+        ResponseDto responseObject = new ResponseDto();
+        try {
+            /** select PolicyNo,Premium  */
+            List<JSONObject> policyList = DatabaseHelper.getPolicyForAddressAndNomineeUpdate(agencyDetails);
+            if (CollectionUtils.isNotEmpty(policyList)) {
+                int counter = 1;
+                for(JSONObject policyObject : policyList ) {
+                    if( counter >= 2) {
+                        counter = 1;
+                        Thread.sleep(20000);
+                    } else {
+                        counter ++;
+                    }
+                        String str1 = String.valueOf(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()));
+                        String strPolicyNo = policyObject.getString("PolicyNo");
+
+                        StringBuilder localStringBuilder = new StringBuilder();
+                        localStringBuilder.append("https://mbiz.licindia.in/AgentBFFService/agentpolicy/policyInfo?policyNumber=");
+                        localStringBuilder.append(Constants.encode(strPolicyNo.replace("\n", "")));
+                        localStringBuilder.append("&dc=");
+                        localStringBuilder.append(str1);
+
+                        OkHttpClient client = new OkHttpClient();
+
+                    Request request = new Request.Builder().url(localStringBuilder.toString())
+                                    .addHeader("accept-encryption", "EDB")
+                                    .addHeader("LOCALE", "IN_En")
+                                    .addHeader("Referer", "https://mbiz.licindia.in/AgentPortal/")
+                                    .addHeader("Channel", "TEST")
+                                    .addHeader("Host", "mbiz.licindia.in")
+                                    .addHeader("Authorization", oldResponse.getValidateOtpResponseJson().getString("accesstoken"))
+                                    .build();
+                    Response response = client.newCall(request).execute();
+                    String token = response.body().string().replaceAll("[\\n\\r]", "");
+                    String str5 =  Constants.decodeResponse(token);
+
+
+                        boolean bool1 = str5.contains(strPolicyNo);
+
+                        if (bool1) {
+                            /** preparing object to values to update in policyCalender */
+                            JSONObject values = new JSONObject(); /** This are the values that we need to update in policyCalender table */
+                            JSONObject jObject = new JSONObject(str5);
+                            try {
+                                JSONObject geoObject = jObject.getJSONObject("address");
+
+                                values.put("Address", geoObject.getString("address1").replace(",", " ").replace("'", ""));
+                                values.put("Address1", geoObject.getString("address2").replace(",", " ").replace("'", ""));
+                                values.put("Address2", geoObject.getString("address3").replace(",", " ").replace("'", ""));
+                                values.put("Pin", geoObject.getString("pin"));
+                            } catch (Exception e) {
+                                System.out.println("Error getting while reading address JSONObject");
+                            }
+                            try {
+                                JSONObject geoObject = jObject.getJSONObject("person");
+
+                                String fullname = geoObject.getString("fullName");
+                                if (fullname != null) {
+                                    fullname = fullname.replace(",", "");
+
+                                    fullname = fullname.trim();
+                                } else {
+                                    fullname = "";
+                                }
+
+                                values.put("Name", fullname);
+
+                                values.put("Gender", geoObject.getString("sex"));
+                            } catch (Exception e) {
+                                System.out.println("Error getting while reading person JSONObject");
+                            }
+                            try {
+                                JSONObject geoObject = jObject.getJSONObject("branch");
+                                values.put("branch", geoObject.getString("branchCode").trim());
+                            } catch (Exception e) {
+                                System.out.println("Error getting while reading branch JSONObject");
+                            }
+                            try {
+                                JSONObject geoObject = jObject.getJSONObject("policy");
+
+                                values.put("PremEndDate", geoObject.getString("dateOfLastPayment"));
+                                values.put("Age", geoObject.getString("ageAtEntry"));
+                                values.put("MaturityDate", geoObject.getString("dateOfMaturity"));
+                                values.put("DOB", geoObject.getString("dob"));
+                                values.put("ppt", geoObject.getString("premiumPayingTerm"));
+
+                                values.put("DOC", geoObject.getString("commenceDate"));
+                                values.put("SA", geoObject.getString("sumAssured").replace(".00", ""));
+                                values.put("Term", geoObject.getString("policyTerm").replace(".00", ""));
+                                values.put("PremMode", geoObject.getString("mode").replace(".00", ""));
+                                values.put("AgencyCode", geoObject.getString("agencyCode").trim());
+                                values.put("Premium", geoObject.getString("premium").replace(".00", ""));
+                                values.put("PlanNo", geoObject.getString("plan"));
+                                values.put("PolicyStatus", geoObject.getString("statusShortDesc"));
+                                values.put("FUPDate", geoObject.getString("firstUnpaidPremiumDate"));
+
+                            } catch (Exception e) {
+                                System.out.println("Error getting and setting while reading policy JSONObject");
+                            }
+
+                            values.put("updateAddress", true);
+                            /** updating values */
+                            try (Connection connection = DriverManager.getConnection(DatabaseHelper.JDBC_URL);
+                                 Statement ignored = connection.createStatement()) {
+                                DatabaseHelper.updatePolicyDataDynamicallyQueryConstruct(connection, values, policyObject.getString("PolicyNo"));
+                            } catch (SQLException e) {
+                                System.out.println("Error getting while connecting database");
+                            }
+                        }
+                };
+                responseObject.setIsError(false);
+                responseObject.setDetailsMessage("SuccessFully update address details...");
+            } else {
+                responseObject.setIsError(false);
+                responseObject.setDetailsMessage("policy details are missing...");
+            }
+            this.exportPolicyDataIntoJsonFile(agencyDetails.getUsername());
+        } catch (Exception e) {
+            responseObject.setIsError(true);
+            responseObject.setErrorMessage(null);
+            responseObject.setDetailsMessage("Getting error while updating address details...");
+        }
+        return responseObject;
+    }
+
+    @Override
+    public ResponseDto updatePolicy(Agency agencyDetails, ResponseDto oldResponse) {
+        ResponseDto responseObject = new ResponseDto();
+        try {
+            /** select PolicyNoMask,Premium  */
+            List<JSONObject> policyList = DatabaseHelper.getPolicyForUpdatePolicy(agencyDetails);
+            if (CollectionUtils.isNotEmpty(policyList)) {
+
+                for(JSONObject policyObject : policyList ) {
+                    String str1 = String.valueOf(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()));
+                    String str2 = policyObject.getString("PolicyNoMask");
+
+                    StringBuilder localStringBuilder = new StringBuilder();
+                    localStringBuilder.append("https://mbiz.licindia.in/AgentBFFService/agentpolicy/policyMaskedInfo?policyNo=");
+                    localStringBuilder.append(str2.replace("\n",""));
+
+                    localStringBuilder.append("&instalmentPremium=");
+                    localStringBuilder.append(policyObject.getString("Premium"));
+
+                    localStringBuilder.append("&agencyCode=");
+                    localStringBuilder.append(agencyDetails.getUsername());
+                    localStringBuilder.append("&dc=");
+                    localStringBuilder.append(str1);
+                    OkHttpClient client = new OkHttpClient();
+
+                    Request request = new Request.Builder()
+                            .url(localStringBuilder.toString())
+                            .addHeader("accept-encryption", "EDB")
+                            .addHeader("LOCALE", "IN_En")
+                            .addHeader("Referer", "https://mbiz.licindia.in/AgentPortal/")
+                            .addHeader("Channel", "TEST")
+                            .addHeader("Host", "mbiz.licindia.in")
+                            .addHeader("Authorization", oldResponse.getValidateOtpResponseJson().getString("accesstoken"))
+                            .build();
+
+                    Response response = client.newCall(request).execute();
+                    String token = response.body().string();
+                    String str5= Constants.decodeResponse(token);
+
+                    JSONObject jObject = new JSONObject(str5);
+                    String policyno = jObject.getString("policyNo").replace("\n","");
+
+                    System.out.println("Policy "+policyno);
+                    if (StringUtils.isNotEmpty(policyno)) {
+
+                        JSONObject values = new JSONObject();
+                        try {
+                            values.put("PolicyNo", policyno);
+                        }
+                        catch (Exception e)
+                        {
+                            e.printStackTrace();
+                        }
+
+                        /** updating values */
+                        try (Connection connection = DriverManager.getConnection(DatabaseHelper.JDBC_URL);
+                             Statement ignored = connection.createStatement()) {
+                            DatabaseHelper.updateMaskPolicyNo(connection, values, policyObject.getString("PolicyNo"), policyObject.getString("Premium"));
+                        } catch (SQLException e) {
+                            System.out.println("Error getting while connecting database");
+                        }
+                    }
+                };
+                responseObject.setIsError(false);
+                responseObject.setDetailsMessage("SuccessFully update policy details...");
+            } else {
+                responseObject.setIsError(false);
+                responseObject.setDetailsMessage("policy details are missing...");
+            }
+        } catch (Exception e) {
+            responseObject.setIsError(true);
+            responseObject.setErrorMessage(null);
+            responseObject.setDetailsMessage("Getting error while updating details...");
+        }
+        return responseObject;
+    }
+
 
     @Override
     public List<Agency> getAgencyStoredData() {
         return DatabaseHelper.getStoredAgency();
     }
 
-    private void savePolicyData(JSONArray policyList) {
-        DatabaseHelper.savePolicyData(policyList);
+    public void exportPolicyDataIntoJsonFile(String username) {
+        if(StringUtils.isNotEmpty(username)) {
+            List<JSONObject> policyList = DatabaseHelper.getAllPolicies();
+            if(CollectionUtils.isNotEmpty(policyList)) {
+                String filePath = "path/to/your/" +  username + "nbdata.json";
+
+                try {
+                    writeJsonToFile(policyList, filePath);
+                    System.out.println("JSON file created successfully at: " + filePath);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private static void writeJsonToFile(List<JSONObject> listJsonData, String filePath) throws IOException {
+        try (FileWriter fileWriter = new FileWriter(filePath)) {
+            fileWriter.write("["); // Start of the JSON array
+
+            for (int i = 0; i < listJsonData.size(); i++) {
+                fileWriter.write(listJsonData.get(i).toString());
+
+                if (i < listJsonData.size() - 1) {
+                    fileWriter.write(",");
+                }
+            }
+            fileWriter.write("]"); // End of the JSON array
+        }
+    }
+
+    private void savePolicyOrUpdateFupData(JSONArray policyList, boolean updateFUP) {
+        DatabaseHelper.savePolicyOrUpdateFupData(policyList, updateFUP);
     }
     private void updatePolicyData(JSONArray policyList) {
         DatabaseHelper.updatePolicyData(policyList);

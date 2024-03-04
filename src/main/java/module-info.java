@@ -19,7 +19,6 @@ module com.micro.pd {
 
     requires org.apache.commons.lang3;
     requires org.apache.commons.collections4;
-    requires lombok;
 
     opens com.micro.pd.controller to javafx.fxml;
 
