@@ -174,8 +174,6 @@ public class Constants {
 
 	public static String encode(String paramString) {
 		byte[] data = Base64.getEncoder().encode(paramString.getBytes());
-
-//		byte[] data = Base64.encode(paramString.getBytes(), Base64.DEFAULT);
 		String str2 = new String(data, StandardCharsets.UTF_8).replaceAll("[\\n\\r]", "");
 		return str2;
 	}
