@@ -6,7 +6,6 @@ import com.micro.pd.modelDTO.Agency;
 import com.micro.pd.modelDTO.ResponseDto;
 import com.micro.pd.service.AgentService;
 import okhttp3.*;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -14,6 +13,9 @@ import org.json.JSONObject;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URLEncoder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -264,130 +266,92 @@ public class AgentServiceImpl implements AgentService {
     }
 
     @Override
-    public ResponseDto addressAndNomineeUpdate(Agency agencyDetails, ResponseDto oldResponse) {
-        ResponseDto responseObject = new ResponseDto();
-        try {
-            /** select PolicyNo,Premium  */
-            List<JSONObject> policyList = DatabaseHelper.getPolicyForAddressAndNomineeUpdate(agencyDetails);
-            if (CollectionUtils.isNotEmpty(policyList)) {
-                int counter = 1;
-                for(JSONObject policyObject : policyList ) {
-                    if( counter >= 2) {
-                        counter = 1;
-                        Thread.sleep(20000);
-                    } else {
-                        counter ++;
-                    }
-                        String str1 = String.valueOf(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()));
-                        String strPolicyNo = policyObject.getString("PolicyNo");
+    public void addressAndNomineeUpdate(Agency agencyDetails, String accesstoken, JSONObject policyObject, Connection connection) throws Exception {
+        String str1 = String.valueOf(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()));
+        String strPolicyNo = policyObject.getString("PolicyNo");
 
-                        StringBuilder localStringBuilder = new StringBuilder();
-                        localStringBuilder.append("https://mbiz.licindia.in/AgentBFFService/agentpolicy/policyInfo?policyNumber=");
-                        localStringBuilder.append(Constants.encode(strPolicyNo.replace("\n", "")));
-                        localStringBuilder.append("&dc=");
-                        localStringBuilder.append(str1);
+        StringBuilder localStringBuilder = new StringBuilder();
+        localStringBuilder.append("https://mbiz.licindia.in/AgentBFFService/agentpolicy/policyInfo?policyNumber=");
+        localStringBuilder.append(Constants.encode(strPolicyNo.replace("\n", "")));
+        localStringBuilder.append("&dc=");
+        localStringBuilder.append(str1);
 
-                        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = new OkHttpClient();
 
-                    Request request = new Request.Builder().url(localStringBuilder.toString())
-                                    .addHeader("accept-encryption", "EDB")
-                                    .addHeader("LOCALE", "IN_En")
-                                    .addHeader("Referer", "https://mbiz.licindia.in/AgentPortal/")
-                                    .addHeader("Channel", "TEST")
-                                    .addHeader("Host", "mbiz.licindia.in")
-                                    .addHeader("Authorization", oldResponse.getValidateOtpResponseJson().getString("accesstoken"))
-                                    .build();
-                    Response response = client.newCall(request).execute();
-                    String token = response.body().string().replaceAll("[\\n\\r]", "");
-                    String str5 =  Constants.decodeResponse(token);
+        Request request = new Request.Builder().url(localStringBuilder.toString())
+                .addHeader("accept-encryption", "EDB")
+                .addHeader("LOCALE", "IN_En")
+                .addHeader("Referer", "https://mbiz.licindia.in/AgentPortal/")
+                .addHeader("Channel", "TEST")
+                .addHeader("Host", "mbiz.licindia.in")
+                .addHeader("Authorization", accesstoken)
+                .build();
+        Response response = client.newCall(request).execute();
+        String token = response.body().string().replaceAll("[\\n\\r]", "");
+        String str5 = Constants.decodeResponse(token);
 
 
-                        boolean bool1 = str5.contains(strPolicyNo);
+        boolean bool1 = str5.contains(strPolicyNo);
 
-                        if (bool1) {
-                            /** preparing object to values to update in policyCalender */
-                            JSONObject values = new JSONObject(); /** This are the values that we need to update in policyCalender table */
-                            JSONObject jObject = new JSONObject(str5);
-                            try {
-                                JSONObject geoObject = jObject.getJSONObject("address");
+        if (bool1) {
+            /** preparing object to values to update in policyCalender */
+            JSONObject values = new JSONObject(); /** This are the values that we need to update in policyCalender table */
+            JSONObject jObject = new JSONObject(str5);
+            try {
+                JSONObject geoObject = jObject.getJSONObject("address");
 
-                                values.put("Address", geoObject.getString("address1").replace(",", " ").replace("'", ""));
-                                values.put("Address1", geoObject.getString("address2").replace(",", " ").replace("'", ""));
-                                values.put("Address2", geoObject.getString("address3").replace(",", " ").replace("'", ""));
-                                values.put("Pin", geoObject.getString("pin"));
-                            } catch (Exception e) {
-                                System.out.println("Error getting while reading address JSONObject");
-                            }
-                            try {
-                                JSONObject geoObject = jObject.getJSONObject("person");
-
-                                String fullname = geoObject.getString("fullName");
-                                if (fullname != null) {
-                                    fullname = fullname.replace(",", "");
-
-                                    fullname = fullname.trim();
-                                } else {
-                                    fullname = "";
-                                }
-
-                                values.put("Name", fullname);
-
-                                values.put("Gender", geoObject.getString("sex"));
-                            } catch (Exception e) {
-                                System.out.println("Error getting while reading person JSONObject");
-                            }
-                            try {
-                                JSONObject geoObject = jObject.getJSONObject("branch");
-                                values.put("branch", geoObject.getString("branchCode").trim());
-                            } catch (Exception e) {
-                                System.out.println("Error getting while reading branch JSONObject");
-                            }
-                            try {
-                                JSONObject geoObject = jObject.getJSONObject("policy");
-
-                                values.put("PremEndDate", geoObject.getString("dateOfLastPayment"));
-                                values.put("Age", geoObject.getString("ageAtEntry"));
-                                values.put("MaturityDate", geoObject.getString("dateOfMaturity"));
-                                values.put("DOB", geoObject.getString("dob"));
-                                values.put("ppt", geoObject.getString("premiumPayingTerm"));
-
-                                values.put("DOC", geoObject.getString("commenceDate"));
-                                values.put("SA", geoObject.getString("sumAssured").replace(".00", ""));
-                                values.put("Term", geoObject.getString("policyTerm").replace(".00", ""));
-                                values.put("PremMode", geoObject.getString("mode").replace(".00", ""));
-                                values.put("AgencyCode", geoObject.getString("agencyCode").trim());
-                                values.put("Premium", geoObject.getString("premium").replace(".00", ""));
-                                values.put("PlanNo", geoObject.getString("plan"));
-                                values.put("PolicyStatus", geoObject.getString("statusShortDesc"));
-                                values.put("FUPDate", geoObject.getString("firstUnpaidPremiumDate"));
-
-                            } catch (Exception e) {
-                                System.out.println("Error getting and setting while reading policy JSONObject");
-                            }
-
-                            values.put("updateAddress", true);
-                            /** updating values */
-                            try (Connection connection = DriverManager.getConnection(DatabaseHelper.JDBC_URL);
-                                 Statement ignored = connection.createStatement()) {
-                                DatabaseHelper.updatePolicyDataDynamicallyQueryConstruct(connection, values, policyObject.getString("PolicyNo"));
-                            } catch (SQLException e) {
-                                System.out.println("Error getting while connecting database");
-                            }
-                        }
-                };
-                responseObject.setIsError(false);
-                responseObject.setDetailsMessage("SuccessFully update address details...");
-            } else {
-                responseObject.setIsError(false);
-                responseObject.setDetailsMessage("policy details are missing...");
+                values.put("Address", geoObject.getString("address1").replace(",", " ").replace("'", ""));
+                values.put("Address1", geoObject.getString("address2").replace(",", " ").replace("'", ""));
+                values.put("Address2", geoObject.getString("address3").replace(",", " ").replace("'", ""));
+                values.put("Pin", String.valueOf(geoObject.get("pin")));
+            } catch (Exception e) {
+                System.out.println("Error getting while reading address JSONObject");
             }
-            this.exportPolicyDataIntoJsonFile(agencyDetails.getUsername());
-        } catch (Exception e) {
-            responseObject.setIsError(true);
-            responseObject.setErrorMessage(null);
-            responseObject.setDetailsMessage("Getting error while updating address details...");
+            try {
+                JSONObject geoObject = jObject.getJSONObject("person");
+
+                String fullname = geoObject.getString("fullName");
+                if (fullname != null) {
+                    fullname = fullname.replace(",", "");
+
+                    fullname = fullname.trim();
+                } else {
+                    fullname = "";
+                }
+
+                values.put("Name", fullname);
+
+                values.put("Gender", geoObject.getString("sex"));
+            } catch (Exception e) {
+                System.out.println("Error getting while reading person JSONObject");
+            }
+            try {
+                JSONObject geoObject = jObject.getJSONObject("branch");
+                values.put("branch", String.valueOf(geoObject.get("branchCode")).trim());
+            } catch (Exception e) {
+                System.out.println("Error getting while reading branch JSONObject");
+            }
+            try {
+                JSONObject geoObject = jObject.getJSONObject("policy");
+
+                values.put("PremEndDate", String.valueOf(geoObject.get("dateOfLastPayment")));
+                values.put("Age", String.valueOf(geoObject.get("ageAtEntry")));
+                values.put("MaturityDate", String.valueOf(geoObject.get("dateOfMaturity")));
+                values.put("DOB", String.valueOf(geoObject.get("dob")));
+                values.put("ppt", String.valueOf(geoObject.get("premiumPayingTerm")));
+
+                values.put("Term", String.valueOf(geoObject.get("policyTerm")).replace(".00", ""));
+                values.put("PolicyStatus", String.valueOf(geoObject.get("statusShortDesc")));
+                values.put("FUPDate", String.valueOf(geoObject.get("firstUnpaidPremiumDate")));
+
+            } catch (Exception e) {
+                System.out.println("Error getting and setting while reading policy JSONObject");
+            }
+
+            values.put("updateAddress", true);
+            /** updating values */
+            DatabaseHelper.updatePolicyDataDynamicallyQueryConstruct(connection, values, policyObject.getString("PolicyNo"));
         }
-        return responseObject;
     }
 
     @Override
@@ -396,7 +360,7 @@ public class AgentServiceImpl implements AgentService {
         try {
             /** select PolicyNoMask,Premium  */
             List<JSONObject> policyList = DatabaseHelper.getPolicyForUpdatePolicy(agencyDetails);
-            if (CollectionUtils.isNotEmpty(policyList)) {
+            if (policyList != null && !policyList.isEmpty()) {
 
                 for(JSONObject policyObject : policyList ) {
                     String str1 = String.valueOf(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()));
@@ -445,7 +409,7 @@ public class AgentServiceImpl implements AgentService {
                         }
 
                         /** updating values */
-                        try (Connection connection = DriverManager.getConnection(DatabaseHelper.JDBC_URL);
+                        try (Connection connection = DatabaseHelper.getConnection();
                              Statement ignored = connection.createStatement()) {
                             DatabaseHelper.updateMaskPolicyNo(connection, values, policyObject.getString("PolicyNo"), policyObject.getString("Premium"));
                         } catch (SQLException e) {
@@ -473,15 +437,42 @@ public class AgentServiceImpl implements AgentService {
         return DatabaseHelper.getStoredAgency();
     }
 
+    @Override
     public void exportPolicyDataIntoJsonFile(String username) {
-        if(StringUtils.isNotEmpty(username)) {
-            List<JSONObject> policyList = DatabaseHelper.getAllPolicies();
-            if(CollectionUtils.isNotEmpty(policyList)) {
-                String filePath = "path/to/your/" +  username + "nbdata.json";
+        if (StringUtils.isNotEmpty(username)) {
+            List<JSONObject> policyList = new ArrayList<>();
+            try {
+                policyList = DatabaseHelper.getAllPolicies();
+            } catch (Exception e) {
+                System.out.println("policy fetching error");
+            }
+            if (policyList != null && !policyList.isEmpty()) {
+                String fileName = username + "nbdata.json";
+
+                // Create a directory named "json_files" in the user's home directory
+                Path directoryPath = Paths.get(System.getProperty("user.home"));
+//                if (!Files.exists(directoryPath)) {
+//                    try {
+//                        Files.createDirectories(directoryPath);
+//                    } catch (IOException e) {
+//                        /** fall back solution */
+//                        directoryPath = Paths.get("C:", "json_files");
+//                        if (!Files.exists(directoryPath)) {
+//                            try {
+//                                Files.createDirectories(directoryPath);
+//                            } catch (IOException exception) {
+//                                exception.printStackTrace();
+//                            }
+//                        }
+//                    }
+//                }
+
+                // Construct the file path inside the "json_files" directory
+                Path filePath = directoryPath.resolve(fileName);
 
                 try {
                     writeJsonToFile(policyList, filePath);
-                    System.out.println("JSON file created successfully at: " + filePath);
+                    System.out.println("JSON file created successfully at: " + filePath.toString());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -489,8 +480,8 @@ public class AgentServiceImpl implements AgentService {
         }
     }
 
-    private static void writeJsonToFile(List<JSONObject> listJsonData, String filePath) throws IOException {
-        try (FileWriter fileWriter = new FileWriter(filePath)) {
+    private static void writeJsonToFile(List<JSONObject> listJsonData, Path filePath) throws IOException {
+        try (FileWriter fileWriter = new FileWriter(filePath.toFile())) {
             fileWriter.write("["); // Start of the JSON array
 
             for (int i = 0; i < listJsonData.size(); i++) {
@@ -503,7 +494,6 @@ public class AgentServiceImpl implements AgentService {
             fileWriter.write("]"); // End of the JSON array
         }
     }
-
     private void savePolicyOrUpdateFupData(JSONArray policyList, boolean updateFUP) {
         DatabaseHelper.savePolicyOrUpdateFupData(policyList, updateFUP);
     }

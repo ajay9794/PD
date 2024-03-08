@@ -6,6 +6,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.net.URL;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +19,19 @@ public class DatabaseHelper {
     public static final String JDBC_URL = "jdbc:sqlite:" + DATABASE_NAME;
 
     public static Connection getConnection() throws SQLException {
+//        if(StringUtils.isEmpty(JDBC_URL)) {
+//            String dbPath = "/pd.db";
+//            URL dbUrl = DatabaseHelper.class.getResource(dbPath);
+//            if (dbUrl != null) {
+//                try {
+//                    /** Convert the URL to a file path */
+//                    String filePath = Paths.get(dbUrl.toURI()).toAbsolutePath().toString();
+//                    JDBC_URL = "jdbc:sqlite:" + filePath;
+//                } catch (Exception e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//        }
         return DriverManager.getConnection(JDBC_URL);
     }
 
@@ -49,7 +64,7 @@ public class DatabaseHelper {
         }
     }
 
-    public static boolean agencyNotAvailable(Connection connection, Agency agency) throws SQLException {
+    public static boolean agencyAvailable(Connection connection, Agency agency) throws SQLException {
         int count = 0;
         String sql = Get_Agency_Specific_Count;
         try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
@@ -67,7 +82,7 @@ public class DatabaseHelper {
         String sql = Insert_Table_Agency_Data;
 
         try (Connection connection = getConnection()) {
-            if(agencyNotAvailable(connection, agency)) {
+            if(!agencyAvailable(connection, agency)) {
                 PreparedStatement preparedStatement = connection.prepareStatement(sql);
                 preparedStatement.setString(1, agency.getAgency());
                 preparedStatement.setString(2, agency.getUsername());
@@ -168,17 +183,17 @@ public class DatabaseHelper {
                 "WHERE SUBSTR(PolicyNoMask, 6, 4) = ? AND PlanNo = ? AND Term = ? AND SA = ? AND FUPDate = ?";
 
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-            String policyNo = policyObject.getString("policyNumber").replace("\n", "").substring(5);
+            String policyNo = (String.valueOf( policyObject.get("policyNumber"))).replace("\n", "").substring(5);
             String plan = policyObject.getString("plan").replace("\n", "");
             String term = policyObject.getString("policyTerm").replace("\n", "");
             String fupdate = policyObject.getString("nextFup").replace("\n", "");
-            String sum = policyObject.getString("sumAssured").replace("\n", "");
+            String sum =(String.valueOf( policyObject.get("sumAssured"))).replace("\n", "");
 
-            preparedStatement.setString(1,  policyObject.getString("policyNumber"));
+            preparedStatement.setString(1,  (String.valueOf( policyObject.get("policyNumber"))));
             preparedStatement.setString(2,  policyObject.optString("email", "").trim().replace("\n", ""));
             preparedStatement.setString(3,  policyObject.optString("mobileNo", "").trim().replace("\n", ""));
-            preparedStatement.setString(4,  policyObject.getString("ageAtEntry"));
-            preparedStatement.setString(5,  policyObject.getString("premiumPayingTerm"));
+            preparedStatement.setString(4,  (String.valueOf(policyObject.get("ageAtEntry"))));
+            preparedStatement.setString(5,  (String.valueOf( policyObject.get("premiumPayingTerm"))));
             preparedStatement.setString(6,  policyObject.getString("dob"));
             preparedStatement.setString(7,  policyObject.getString("serviceBranch").trim());
             preparedStatement.setString(8, policyNo);
@@ -220,15 +235,15 @@ public class DatabaseHelper {
     private static void insertPolicy(Connection connection, JSONObject policyObject) throws SQLException {
         String query = "INSERT INTO PolicyCalendar (PolicyNoMask,Name,DOC,SA,Term,PremMode,AgencyCode,Premium,PlanNo,PolicyStatus,FUPDate,updateAddress,PolicyNo) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
-            preparedStatement.setString(1, policyObject.getString("policyno"));
+            preparedStatement.setString(1, (String.valueOf( policyObject.get("policyno"))));
             preparedStatement.setString(2, policyObject.getString("fullName"));
             preparedStatement.setString(3, policyObject.getString("doc"));
-            preparedStatement.setString(4, StringUtils.isNotEmpty(policyObject.getString("sumAssured")) ? policyObject.getString("sumAssured").replace(".00", "") : null);
+            preparedStatement.setString(4, StringUtils.isNotEmpty((String.valueOf( policyObject.get("sumAssured")))) ? (String.valueOf( policyObject.get("sumAssured"))).replace(".00", "") : null);
             preparedStatement.setString(5, StringUtils.isNotEmpty(policyObject.getString("policyTerm")) ? policyObject.getString("policyTerm").replace(".00", "") : null);
             preparedStatement.setString(6, StringUtils.isNotEmpty(policyObject.getString("paymentMode")) ? policyObject.getString("paymentMode").replace(".00", "") : null);
             preparedStatement.setString(7, StringUtils.isNotEmpty(policyObject.getString("agencyCode")) ? policyObject.getString("agencyCode").trim() : null);
-            preparedStatement.setString(8, StringUtils.isNotEmpty(policyObject.getString("premiumAmount")) ? policyObject.getString("premiumAmount").replace(".00", "") : null);
-            preparedStatement.setString(9, policyObject.getString("planNumber"));
+            preparedStatement.setString(8, StringUtils.isNotEmpty((String.valueOf( policyObject.get("premiumAmount")))) ? (String.valueOf( policyObject.get("premiumAmount"))).replace(".00", "") : null);
+            preparedStatement.setString(9, String.valueOf( policyObject.get("planNumber")));
             preparedStatement.setString(10, policyObject.getString("policyStatus"));
             preparedStatement.setString(11, StringUtils.isNotEmpty(policyObject.getString("firstUnpaid")) ? policyObject.getString("firstUnpaid").replace("00:00:00.0","").trim() : null);
             preparedStatement.setBoolean(12, false);
@@ -344,35 +359,35 @@ public class DatabaseHelper {
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 JSONObject policyObject = new JSONObject();
-                policyObject.put("PolicyNo" , resultSet.getString("PolicyNo"));
-                policyObject.put("Name" , resultSet.getString("Name"));
-                policyObject.put("Gender" , resultSet.getString("Gender"));
-                policyObject.put("DOB" , resultSet.getString("DOB"));
-                policyObject.put("Age" , resultSet.getString("Age"));
-                policyObject.put("DOC" , resultSet.getString("DOC"));
-                policyObject.put("PlanNo" , resultSet.getString("PlanNo"));
-                policyObject.put("Term" , resultSet.getString("Term"));
-                policyObject.put("PPT" , resultSet.getString("PPT"));
-                policyObject.put("PremMode" , resultSet.getString("PremMode"));
-                policyObject.put("SA" , resultSet.getString("SA"));
-                policyObject.put("Premium" , resultSet.getString("Premium"));
-                policyObject.put("FUPDate" , resultSet.getString("FUPDate"));
-                policyObject.put("PolicyStatus" , resultSet.getString("PolicyStatus"));
-                policyObject.put("MaturityDate" , resultSet.getString("MaturityDate"));
-                policyObject.put("PremEndDate" , resultSet.getString("PremEndDate"));
-                policyObject.put("Mobile1" , resultSet.getString("Mobile1"));
-                policyObject.put("Mobile2" , resultSet.getString("Mobile2"));
-                policyObject.put("Email1" , resultSet.getString("Email1"));
-                policyObject.put("Email2" , resultSet.getString("Email2"));
-                policyObject.put("Address" , resultSet.getString("Address"));
-                policyObject.put("Address1" , resultSet.getString("Address1"));
-                policyObject.put("Address2" , resultSet.getString("Address2"));
-                policyObject.put("Pin" , resultSet.getString("Pin"));
-                policyObject.put("Nominee" , resultSet.getString("Nominee"));
-                policyObject.put("NomineeAge" , resultSet.getString("NomineeAge"));
-                policyObject.put("NomineeR" , resultSet.getString("NomineeR"));
-                policyObject.put("branch" , resultSet.getString("branch"));
-                policyObject.put("AgencyCode" , resultSet.getString("AgencyCode"));
+                policyObject.put("PolicyNo" , getStringOrEmpty(resultSet,"PolicyNo"));
+                policyObject.put("Name" , getStringOrEmpty(resultSet,"Name"));
+                policyObject.put("Gender" , getStringOrEmpty(resultSet,"Gender"));
+                policyObject.put("DOB" , getStringOrEmpty(resultSet,"DOB"));
+                policyObject.put("Age" , getStringOrEmpty(resultSet,"Age"));
+                policyObject.put("DOC" , getStringOrEmpty(resultSet,"DOC"));
+                policyObject.put("PlanNo" , getStringOrEmpty(resultSet,"PlanNo"));
+                policyObject.put("Term" , getStringOrEmpty(resultSet,"Term"));
+                policyObject.put("PPT" , getStringOrEmpty(resultSet,"PPT"));
+                policyObject.put("PremMode" , getStringOrEmpty(resultSet,"PremMode"));
+                policyObject.put("SA" , getStringOrEmpty(resultSet,"SA"));
+                policyObject.put("Premium" , getStringOrEmpty(resultSet,"Premium"));
+                policyObject.put("FUPDate" , getStringOrEmpty(resultSet,"FUPDate"));
+                policyObject.put("PolicyStatus" , getStringOrEmpty(resultSet,"PolicyStatus"));
+                policyObject.put("MaturityDate" , getStringOrEmpty(resultSet,"MaturityDate"));
+                policyObject.put("PremEndDate" , getStringOrEmpty(resultSet,"PremEndDate"));
+                policyObject.put("Mobile1" , getStringOrEmpty(resultSet,"Mobile1"));
+                policyObject.put("Mobile2" , getStringOrEmpty(resultSet,"Mobile2"));
+                policyObject.put("Email1" , getStringOrEmpty(resultSet,"Email1"));
+                policyObject.put("Email2" , getStringOrEmpty(resultSet,"Email2"));
+                policyObject.put("Address" , getStringOrEmpty(resultSet,"Address"));
+                policyObject.put("Address1" , getStringOrEmpty(resultSet,"Address1"));
+                policyObject.put("Address2" , getStringOrEmpty(resultSet,"Address2"));
+                policyObject.put("Pin" , getStringOrEmpty(resultSet,"Pin"));
+                policyObject.put("Nominee" , getStringOrEmpty(resultSet,"Nominee"));
+                policyObject.put("NomineeAge" , getStringOrEmpty(resultSet,"NomineeAge"));
+                policyObject.put("NomineeR" , getStringOrEmpty(resultSet,"NomineeR"));
+                policyObject.put("branch" , getStringOrEmpty(resultSet,"branch"));
+                policyObject.put("AgencyCode" , getStringOrEmpty(resultSet,"AgencyCode"));
 
                 policyList.add(policyObject);
             }
@@ -381,5 +396,10 @@ public class DatabaseHelper {
             e.printStackTrace();
         }
         return policyList;
+    }
+
+    private static String getStringOrEmpty(ResultSet resultSet, String columnName) throws SQLException {
+        String value = resultSet.getString(columnName);
+        return (value != null) ? value : "null";
     }
 }

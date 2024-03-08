@@ -8,7 +8,9 @@ import com.micro.pd.service.serviceImpl.AgentServiceImpl;
 import io.github.palexdev.materialfx.controls.MFXButton;
 import io.github.palexdev.materialfx.controls.MFXComboBox;
 import io.github.palexdev.materialfx.controls.MFXTextField;
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -19,12 +21,15 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.util.Duration;
 import javafx.util.StringConverter;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONObject;
 
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -80,13 +85,13 @@ public class AgentController implements Initializable {
     @FXML
     private MFXButton otpSubmitButton;
     @FXML
-    private MFXButton registerMPINButton;
-    @FXML
     private MFXButton updateAddressAndNomineeButton;
     @FXML
     private MFXButton updateFUPButton;
     @FXML
     private MFXButton updatePolicyButton;
+    @FXML
+    private MFXButton exportDataButton;
 
 
 
@@ -100,9 +105,30 @@ public class AgentController implements Initializable {
 
     public AgentController() {}
 
+
     @FXML
-    void onClickRegisterMPINButton(ActionEvent event) {
-        this.showAlert(Alert.AlertType.ERROR, "Error", "header", "This is the complete message");
+    void onClickButtonExportData(ActionEvent actionEvent) {
+        if(this.username.getText().isEmpty()) {
+            this.showAlert(Alert.AlertType.WARNING, "", null, "Fill in the agency information...");
+        } else {
+            this.requestMessage.setText("Currently, we are in the process of exporting policy details");
+            this.spinnerActive(true);
+            new Thread(() -> {
+                agentService.exportPolicyDataIntoJsonFile(this.username.getText());
+
+                // Once the export operation is complete, update UI on the JavaFX Application Thread
+                Platform.runLater(() -> {
+
+                    // Introduce a delay of 2 seconds (adjust as needed)
+                    PauseTransition pause = new PauseTransition(Duration.seconds(2));
+                    pause.setOnFinished(event -> {
+                        this.requestMessage.setText("");
+                        this.spinnerActive(false);
+                    });
+                    pause.play();
+                });
+            }).start();
+        }
     }
 
     @FXML
@@ -142,7 +168,7 @@ public class AgentController implements Initializable {
             this.requestMessage.setText("OTP Validation in-progress...");
             this.middlePage.setVisible(true);
             this.popupPage.setVisible(false);
-            this.spinner.setVisible(true);
+            this.spinnerActive(true);
             CompletableFuture.supplyAsync(this::validateOTP)
                     .thenApplyAsync(this::downloadPolicyList)
                     .thenApplyAsync(this::updateMaskedPolicyNumber)
@@ -150,7 +176,7 @@ public class AgentController implements Initializable {
                         Platform.runLater(() -> {
                             Platform.runLater(() -> {
                                 this.requestMessage.setText("");
-                                this.spinner.setVisible(false);
+                                this.spinnerActive(false);
                                 this.popupLabelMessage.setText("");
                                 this.popupPage.setVisible(false);
                                 this.welcomeText.setText("");
@@ -168,6 +194,9 @@ public class AgentController implements Initializable {
                     .exceptionally(throwable -> {
                         /** Handle exceptions */
                         Platform.runLater(() ->{
+                                    this.middlePage.setVisible(true);
+                                    this.popupPage.setVisible(false);
+                                    this.spinnerActive(false);
                                     this.enableOrDisabledAllFeilds(false);
                                     this.showAlert(Alert.AlertType.ERROR, "Error", null, throwable.getMessage());
                         });
@@ -177,40 +206,143 @@ public class AgentController implements Initializable {
     }
 
     @FXML
-    void onClickButtonAddressAndNomineeUpdate(ActionEvent event) {
+    void onClickButtonAddressAndNomineeUpdate(ActionEvent actionEvent) {
         if(this.checkUserCredentials()) {
             Agency agencyDetails = new Agency(this.agency.getText(), this.agencyName.getText(), this.username.getText(), this.password.getText(),
                     this.strDOB.getValue().toString(), this.strFromDate.getValue().toString(),this.strToDate.getValue().toString());
+            String accessTokan = null;
+            if(this.responseDto.getValidateOtpResponseJson() != null && StringUtils.isNotEmpty(this.responseDto.getValidateOtpResponseJson().getString("accesstoken"))) {
+                accessTokan = this.responseDto.getValidateOtpResponseJson().getString("accesstoken");
+            }
+            List<JSONObject> policyList = DatabaseHelper.getPolicyForAddressAndNomineeUpdate(agencyDetails);
+            if (policyList != null && !policyList.isEmpty()) {
+                Platform.runLater(() -> {
+                    this.spinnerActive(true);
+                    this.updateAddressAndNomineeButton.setDisable(true);
+                    this.requestMessage.setText("Updating policy details...");
+                });
+                String finalAccessTokan = accessTokan;
+                Task<ResponseDto> task = new Task<>() {
+                    @Override
+                    protected ResponseDto call() {
+                        ResponseDto responseObject = responseDto;
+                        try {
+                            Connection connection = DatabaseHelper.getConnection();
+                            int counter = 1;
+                            for (JSONObject policyObject : policyList) {
+                                if (counter >= 2) {
+                                    counter = 1;
+                                    Thread.sleep(20000);
+                                } else {
+                                    counter++;
+                                }
+                                agentService.addressAndNomineeUpdate(agencyDetails, finalAccessTokan, policyObject,  connection);
+                                Platform.runLater(() -> {
+                                    requestMessage.setText(policyObject.getString("PolicyNo") + "policy updated...");
+                                });
+                            }
+                            responseObject.setIsError(false);
+                            responseObject.setErrorMessage(null);
+                            responseObject.setDetailsMessage("SuccessFully update all policy address details...");
+                            agentService.exportPolicyDataIntoJsonFile(agencyDetails.getUsername());
+                            return responseObject;
+                        } catch (Exception e) {
+                            responseObject.setIsError(true);
+                            responseObject.setErrorMessage("Getting error while updating address details...");
+                            responseObject.setDetailsMessage(e.getMessage());
+                            return responseObject;
+                        }
+                    }
+                };
 
-            ResponseDto response = this.agentService.addressAndNomineeUpdate(agencyDetails, this.responseDto);
-            if(BooleanUtils.isTrue(response.getIsError())) {
-                this.showAlert(Alert.AlertType.ERROR,  "Address And Nominee update", response.getErrorMessage(), response.getDetailsMessage());
+                // Set callbacks for success and failure
+                task.setOnSucceeded(event -> {
+                    ResponseDto result = task.getValue(); // Retrieve the response
+                    // Handle the result as needed
+                    // Note: This block is executed on the JavaFX Application Thread
+                    if (result != null && !result.getIsError()) {
+                        // Update UI for successful response
+                        this.showAlert(Alert.AlertType.INFORMATION, "", result.getErrorMessage(), result.getDetailsMessage());
+                    } else {
+                        // Handle error case
+                        this.showAlert(Alert.AlertType.ERROR, "", result.getErrorMessage(), result.getDetailsMessage());
+                    }
+                    Platform.runLater(() -> {
+                        this.spinnerActive(false);
+                    });
+                });
+
+                task.setOnFailed(event -> {
+                    // Handle failure or exception
+                    ResponseDto result = task.getValue(); // Retrieve the response (may be null)
+                    // Handle the result or exception as needed
+                    // Note: This block is executed on the JavaFX Application Thread
+                    if (result != null && !result.getIsError()) {
+                        // Update UI for successful response
+                        this.showAlert(Alert.AlertType.INFORMATION, "", result.getErrorMessage(), result.getDetailsMessage());
+                    } else {
+                        // Handle error case
+                        this.showAlert(Alert.AlertType.ERROR, "", result.getErrorMessage(), result.getDetailsMessage());
+                    }
+                    Platform.runLater(() -> {
+                        this.spinnerActive(false);
+                    });
+                });
+
+                // Start the task in a new thread
+                new Thread(task).start();
             } else {
-                /** Success response */
-                this.showAlert(Alert.AlertType.INFORMATION,  "Address And Nominee update", response.getErrorMessage(), response.getDetailsMessage());
+                this.showAlert(Alert.AlertType.INFORMATION,  "", null, "policy detail's are missing...");
             }
         }
     }
 
     @FXML
     void onClickButtonUpdatePolicy(ActionEvent event) {
-        Agency agencyDetails = new Agency(this.agency.getText(), this.agencyName.getText(), this.username.getText(), this.password.getText(),
-                this.strDOB.getValue().toString(), this.strFromDate.getValue().toString(),this.strToDate.getValue().toString());
-
-        ResponseDto response = this.agentService.updatePolicy(agencyDetails, this.responseDto);
-        if(BooleanUtils.isTrue(response.getIsError())) {
-            this.showAlert(Alert.AlertType.ERROR,  "update *** policy", response.getErrorMessage(), response.getDetailsMessage());
-        } else {
-            /** Success response */
-            this.showAlert(Alert.AlertType.INFORMATION,  "update *** policy", response.getErrorMessage(), response.getDetailsMessage());
+        if(checkUserCredentials()) {
+            Agency agencyDetails = new Agency(this.agency.getText(), this.agencyName.getText(), this.username.getText(), this.password.getText(),
+                    this.strDOB.getValue().toString(), this.strFromDate.getValue().toString(),this.strToDate.getValue().toString());
+            Platform.runLater(() ->{
+                this.spinnerActive(true);
+                this.requestMessage.setText("Update policy details...");
+            });
+            ResponseDto response = this.agentService.updatePolicy(agencyDetails, this.responseDto);
+            Platform.runLater(() ->{
+                if(BooleanUtils.isTrue(response.getIsError())) {
+                    this.showAlert(Alert.AlertType.ERROR,  "update *** policy", response.getErrorMessage(), response.getDetailsMessage());
+                } else {
+                    /** Success response */
+                    this.showAlert(Alert.AlertType.INFORMATION,  "update *** policy", response.getErrorMessage(), response.getDetailsMessage());
+                }
+                this.spinnerActive(false);
+                this.requestMessage.setText("");
+            });
         }
     }
+
     @FXML
     void onClickButtonUpdateFUP(ActionEvent event) {
-        Agency agencyDetails = new Agency(this.agency.getText(), this.agencyName.getText(), this.username.getText(), this.password.getText(),
-                this.strDOB.getValue().toString(), this.strFromDate.getValue().toString(),this.strToDate.getValue().toString());
+        if(checkUserCredentials()) {
+            Agency agencyDetails = new Agency(this.agency.getText(), this.agencyName.getText(), this.username.getText(), this.password.getText(),
+                    this.strDOB.getValue().toString(), this.strFromDate.getValue().toString(),this.strToDate.getValue().toString());
 
-        ResponseDto response = this.agentService.downloadPolicyListOrUpdateFUP(agencyDetails, this.responseDto, true);
+            Platform.runLater(() -> {
+                this.spinnerActive(true);
+                this.requestMessage.setText("Update policy details...");
+            });
+            ResponseDto response = this.agentService.downloadPolicyListOrUpdateFUP(agencyDetails, this.responseDto, true);
+            if(BooleanUtils.isTrue(response.getIsError())) {
+                this.showAlert(Alert.AlertType.ERROR,  "Update FUP", response.getErrorMessage(), response.getDetailsMessage());
+            } else {
+                /** Success response */
+                this.showAlert(Alert.AlertType.INFORMATION,  "Update FUP", response.getErrorMessage(), response.getDetailsMessage());
+            }
+            Platform.runLater(() -> {
+                this.spinnerActive(false);
+                this.requestMessage.setText("");
+            });
+        }
+
     }
 
     public ResponseDto validateOTP() {
@@ -220,7 +352,7 @@ public class AgentController implements Initializable {
             Platform.runLater(() -> {
                 this.welcomeText.setText(response.getDetailsMessage());
                 this.requestMessage.setText("");
-                this.spinner.setVisible(false);
+                this.spinnerActive(false);
                 this.popupPage.setVisible(true);
                 this.popupLabelMessage.setText(response.getDetailsMessage());
             });
@@ -235,7 +367,7 @@ public class AgentController implements Initializable {
                 this.welcomeText.setText("OTP Validation Success...");
                 this.popupLabelMessage.setText("");
                 this.middlePage.setVisible(true);
-                this.spinner.setVisible(true);
+                this.spinnerActive(true);
                 this.popupPage.setVisible(false);
                 System.out.println("validation is done");
             });
@@ -250,7 +382,7 @@ public class AgentController implements Initializable {
             if(BooleanUtils.isTrue(policyDownloadResponse.getIsError())) {
                 Platform.runLater(() -> {
                     this.requestMessage.setText("");
-                    this.spinner.setVisible(false);
+                    this.spinnerActive(false);
                     this.popupLabelMessage.setText("");
                     this.popupPage.setVisible(false);
                     this.welcomeText.setText(policyDownloadResponse.getDetailsMessage());
@@ -286,6 +418,7 @@ public class AgentController implements Initializable {
                 this.username.getText().isEmpty() || this.password.getText().isEmpty() ||
                 this.strDOB.getValue() == null || this.strToDate.getValue() == null ||
                 this.strFromDate.getValue() == null) {
+            this.showAlert(Alert.AlertType.WARNING, "Incomplete Form", null, "Please fill in all required fields.");
             return false;
         } else {
             return true;
@@ -311,6 +444,11 @@ public class AgentController implements Initializable {
         this.strToDate.setDisable(value);
     }
 
+    public void spinnerActive(boolean value) {
+        this.spinner.setVisible(value);
+        this.middlePage.setDisable(value);
+        this.popupPage.setDisable(value);
+    }
     private void showAlert(Alert.AlertType alertType, String alertTitle, String alertHeader, String alertMessage) {
         Alert alert = new Alert(alertType);
         alert.setTitle(alertTitle);
@@ -330,7 +468,7 @@ public class AgentController implements Initializable {
         this.leftSideVBox.setVisible(true);
         this.middlePage.setVisible(true);
         this.popupPage.setVisible(false);
-        this.spinner.setVisible(false);
+        this.spinnerActive(false);
 
         /** initially disabled button's*/
         this.updateFUPButton.setDisable(true);
@@ -338,7 +476,7 @@ public class AgentController implements Initializable {
         this.updatePolicyButton.setDisable(true);
 
         StringConverter<LocalDate> converter = new StringConverter<>() {
-            final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd");
+            final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
             @Override
             public String toString(LocalDate date) {
@@ -364,7 +502,7 @@ public class AgentController implements Initializable {
 
         Platform.runLater(()-> {
             List<Agency> agencyList = this.agentService.getAgencyStoredData();
-            if(CollectionUtils.isNotEmpty(agencyList)) {
+            if(agencyList != null && !agencyList.isEmpty()) {
                 this.storedAgencyList = agencyList;
 
                 List<String> namesList = agencyList.stream()
@@ -391,7 +529,7 @@ public class AgentController implements Initializable {
         agency.setOnAction(event -> {
             List<Agency> agencyListObject = this.storedAgencyList.stream().filter(agencyObj -> StringUtils.isNotEmpty(agencyObj.getAgency()) && agencyObj.getAgency().equalsIgnoreCase(agency.getValue())).collect(Collectors.toList());
             Agency agencyObject = agencyListObject.get(0);
-            if(CollectionUtils.isNotEmpty(agencyListObject) && agencyObject != null) {
+            if(agencyListObject != null && !agencyListObject.isEmpty() && agencyObject != null) {
                 this.agencyName.setText(agencyObject.getAgencyName());
                 this.username.setText(agencyObject.getUsername());
                 this.password.setText(agencyObject.getPassword());
