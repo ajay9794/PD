@@ -1,14 +1,16 @@
 module com.micro.pd {
     requires javafx.controls;
     requires javafx.fxml;
+    requires java.base;
 
     // SQLite JDBC
     requires java.sql;
     requires org.xerial.sqlitejdbc;
 
-    // OkHttp
-    requires okhttp3;
-
+    // OkHttp3
+//    requires static okhttp3; /** building executable Jar */
+    requires  okhttp3;
+    requires org.slf4j;
 
     // JSON Simple
     requires org.json;
@@ -18,7 +20,6 @@ module com.micro.pd {
     requires VirtualizedFX;
 
     requires org.apache.commons.lang3;
-    requires org.apache.commons.collections4;
 
     opens com.micro.pd.controller to javafx.fxml;
 

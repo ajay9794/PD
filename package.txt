@@ -1,0 +1,3 @@
+@echo off
+
+jpackage --type exe --input . --dest . --main-jar PD.jar --main-class com.micro.pd.App --module-path "C:\Program Files\Java\javafx-jmods-21.0.2" --win-shortcut --win-menu --name "PD Desktop"

@@ -13,9 +13,6 @@
 <?import javafx.scene.layout.Pane?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.paint.Color?>
-<?import javafx.scene.paint.LinearGradient?>
-<?import javafx.scene.paint.Stop?>
 <?import javafx.scene.text.Font?>
 
 <HBox fx:id="root" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.micro.pd.controller.AgentController">
@@ -43,54 +40,38 @@
                         <MFXTextField fx:id="agencyName" floatMode="ABOVE" floatingText="Agency Name" layoutX="229.0" layoutY="66.0" prefHeight="48.0" prefWidth="173.0" />
                         <MFXTextField fx:id="username" floatMode="ABOVE" floatingText="Username" layoutX="41.0" layoutY="144.0" prefHeight="48.0" prefWidth="173.0" />
                         <MFXTextField fx:id="password" floatMode="ABOVE" floatingText="Password" layoutX="229.0" layoutY="144.0" prefHeight="48.0" prefWidth="173.0" />
-                        <MFXButton fx:id="registerMPINButton" layoutX="101.0" layoutY="334.0" onAction="#onClickRegisterMPINButton" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="Register MPIN" textAlignment="CENTER" textFill="WHITE">
-                           <rippleColor>
-                              <LinearGradient endX="1.0" endY="1.0">
-                                 <stops>
-                                    <Stop>
-                                       <color>
-                                          <Color />
-                                       </color>
-                                    </Stop>
-                                    <Stop offset="1.0">
-                                       <color>
-                                          <Color red="1.0" green="1.0" blue="1.0" />
-                                       </color>
-                                    </Stop>
-                                 </stops>
-                              </LinearGradient>
-                           </rippleColor>
+                        <MFXButton fx:id="nbDownloadButton" layoutX="101.0" layoutY="345.0" onAction="#onButtonClick" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="NB Download" textAlignment="CENTER" textFill="WHITE">
                            <font>
                               <Font size="15.0" />
                            </font>
                         </MFXButton>
-                        <MFXButton fx:id="nbDownloadButton" layoutX="101.0" layoutY="377.0" onAction="#onButtonClick" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="NB Download" textAlignment="CENTER" textFill="WHITE">
+                        <MFXButton fx:id="updatePolicyButton" layoutX="101.0" layoutY="391.0" onAction="#onClickButtonUpdatePolicy" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="Update **** Policy" textAlignment="CENTER" textFill="WHITE">
                            <font>
                               <Font size="15.0" />
                            </font>
                         </MFXButton>
-                        <MFXButton fx:id="updatePolicyButton" layoutX="101.0" layoutY="423.0" onAction="#onClickButtonUpdatePolicy" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="Update **** Policy" textAlignment="CENTER" textFill="WHITE">
+                        <MFXButton fx:id="updateAddressAndNomineeButton" layoutX="101.0" layoutY="437.0" onAction="#onClickButtonAddressAndNomineeUpdate" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="Address And Nominee Update" textAlignment="CENTER" textFill="WHITE">
                            <font>
                               <Font size="15.0" />
                            </font>
                         </MFXButton>
-                        <MFXButton fx:id="updateAddressAndNomineeButton" layoutX="101.0" layoutY="469.0" onAction="#onClickButtonAddressAndNomineeUpdate" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="Address And Nominee Update" textAlignment="CENTER" textFill="WHITE">
-                           <font>
-                              <Font size="15.0" />
-                           </font>
-                        </MFXButton>
-                        <MFXButton fx:id="updateFUPButton" layoutX="101.0" layoutY="515.0" onAction="#onClickButtonUpdateFUP" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="Update FUP" textAlignment="CENTER" textFill="WHITE">
+                        <MFXButton fx:id="updateFUPButton" layoutX="101.0" layoutY="483.0" onAction="#onClickButtonUpdateFUP" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="Update FUP" textAlignment="CENTER" textFill="WHITE">
                            <font>
                               <Font size="15.0" />
                            </font>
                         </MFXButton>
                         <Label fx:id="welcomeText" layoutX="118.0" layoutY="24.0" prefHeight="17.0" prefWidth="222.0" />
-                        <DatePicker fx:id="strDOB" editable="true" layoutX="226.0" layoutY="215.0" promptText="YYYY/MM/DD" style="-fx-background-color: white;" />
+                        <DatePicker fx:id="strDOB" editable="true" layoutX="226.0" layoutY="215.0" promptText="DD/MM/YYYY" style="-fx-background-color: white;" />
                         <Label layoutX="41.0" layoutY="219.0" prefHeight="18.0" prefWidth="173.0" text="Date OF Birth" />
-                        <DatePicker fx:id="strFromDate" editable="true" layoutX="226.0" layoutY="257.0" promptText="YYYY/MM/DD" style="-fx-background-color: white;" />
+                        <DatePicker fx:id="strFromDate" editable="true" layoutX="226.0" layoutY="257.0" promptText="DD/MM/YYYY" style="-fx-background-color: white;" />
                         <Label layoutX="41.0" layoutY="261.0" prefHeight="18.0" prefWidth="173.0" text="From Date" />
-                        <DatePicker fx:id="strToDate" editable="true" layoutX="226.0" layoutY="300.0" promptText="YYYY/MM/DD" style="-fx-background-color: white;" />
+                        <DatePicker fx:id="strToDate" editable="true" layoutX="226.0" layoutY="300.0" promptText="DD/MM/YYYY" style="-fx-background-color: white;" />
                         <Label layoutX="41.0" layoutY="304.0" prefHeight="18.0" prefWidth="173.0" text="To Date" />
+                        <MFXButton fx:id="exportDataButton" layoutX="101.0" layoutY="529.0" onAction="#onClickButtonExportData" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="Export Data" textAlignment="CENTER" textFill="WHITE">
+                           <font>
+                              <Font size="15.0" />
+                           </font>
+                        </MFXButton>
                      </children>
                   </Pane>
                   <Pane fx:id="popupPage" prefHeight="600.0" prefWidth="537.0" visible="false">
@@ -113,10 +94,13 @@
                      <StackPane style="-fx-background-color: rgba(169, 169, 169, 0.5);">
                         <AnchorPane>
                            <children>
-                              <MFXButton layoutX="461.0" layoutY="14.0" text="close" />
                               <!-- Spinner -->
-                              <MFXProgressSpinner layoutX="240.0" layoutY="275.0" />
-                              <Label fx:id="requestMessage" layoutX="105.0" layoutY="213.0" prefHeight="25.0" prefWidth="319.0" />
+                              <MFXProgressSpinner layoutX="215.0" layoutY="228.0" />
+                              <Label fx:id="requestMessage" alignment="CENTER" layoutX="13.0" layoutY="191.0" prefHeight="25.0" prefWidth="453.0" text="">
+                                 <font>
+                                    <Font size="15.0" />
+                                 </font>
+                              </Label>
                            </children>
                         </AnchorPane>
                      </StackPane>
