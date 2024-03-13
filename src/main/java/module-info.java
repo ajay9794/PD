@@ -10,7 +10,6 @@ module com.micro.pd {
     // OkHttp3
 //    requires static okhttp3; /** building executable Jar */
     requires  okhttp3;
-    requires org.slf4j;
 
     // JSON Simple
     requires org.json;

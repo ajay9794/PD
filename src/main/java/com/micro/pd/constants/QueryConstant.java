@@ -21,7 +21,7 @@ public final class QueryConstant {
     public static final String GET_Agencies_Table_Data = "SELECT * FROM Agencies";
 
     /** The Constant GET_Policy_calender_Table_Data */
-    public static final String GET_Policy_calender_Table_Data = "Select * from PolicyCalendar";
+    public static final String GET_Policy_calender_Table_Data = "Select * from PolicyCalendar where AgencyCode = ?";
 
     /** The Constant Get_Agency_Specific_Count */
     public static final String Get_Agency_Specific_Count= "SELECT COUNT(*) from Agencies where Username = ?";

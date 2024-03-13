@@ -13,13 +13,9 @@ import org.json.JSONObject;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URLEncoder;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -65,20 +61,25 @@ public class AgentServiceImpl implements AgentService {
                 e.printStackTrace();
             }
 
+            if ((responseStringJson.contains("Invalid DOB") | responseStringJson.contains("Invalid Date Of Birth"))) {
+                responseObject.setDetailsMessage("Invalid DOB");
+                responseObject.setIsError(true);
+                return responseObject;
+            }
 
-//            String strOtpReference="";
-
-
-            if (responseStringJson.contains(""))
-
-                if ((responseStringJson.contains("Invalid DOB") | responseStringJson.contains("Invalid Date Of Birth"))) {
-                    responseObject.setDetailsMessage("Invalid DOB");
-                    responseObject.setIsError(true);
-                    return responseObject;
-                }
+            if (responseStringJson.contains("Invalid Password")) {
+                responseObject.setDetailsMessage("Invalid Password");
+                responseObject.setIsError(true);
+                return responseObject;
+            }
 
             if (responseStringJson.contains("Active LIC Agents are required to submit written request")) {
-                responseObject.setDetailsMessage("Active LIC Agents are required to submit written request\"");
+                responseObject.setDetailsMessage("Active users need to submit form to LIC.");
+                responseObject.setIsError(true);
+                return responseObject;
+            }
+            if (responseStringJson.contains("IP Not Started")) {
+                responseObject.setDetailsMessage("Connection Problem, Try Again..");
                 responseObject.setIsError(true);
                 return responseObject;
             }
@@ -348,6 +349,30 @@ public class AgentServiceImpl implements AgentService {
                 System.out.println("Error getting and setting while reading policy JSONObject");
             }
 
+            try{
+                JSONArray localJSONArray = new JSONObject(str5).optJSONArray("nominees");
+                if (localJSONArray.length()>0) {
+                    JSONObject localJSONObject = localJSONArray.getJSONObject(0);
+
+                    if (localJSONObject.has("nomineeAge") && !String.valueOf(localJSONObject.get("nomineeAge")).equalsIgnoreCase("null"))
+                        values.put("NomineeAge", String.valueOf(localJSONObject.get("nomineeAge")));
+                    else
+                        values.put("NomineeAge", "");
+
+                    if (localJSONObject.has("nomineeName") && !localJSONObject.getString("nomineeName").equalsIgnoreCase("null"))
+                        values.put("Nominee", localJSONObject.getString("nomineeName").replace(",", " "));
+                    else
+                        values.put("Nominee", "");
+
+                    if (localJSONObject.has("nomineeRelation") && !localJSONObject.getString("nomineeRelation").equalsIgnoreCase("null"))
+                        values.put("NomineeR", localJSONObject.getString("nomineeRelation"));
+                    else
+                        values.put("NomineeR", "");
+                }
+            } catch (Exception e) {
+                System.out.println("Error getting and setting while reading nominees JSONObject");
+            }
+
             values.put("updateAddress", true);
             /** updating values */
             DatabaseHelper.updatePolicyDataDynamicallyQueryConstruct(connection, values, policyObject.getString("PolicyNo"));
@@ -361,7 +386,7 @@ public class AgentServiceImpl implements AgentService {
             /** select PolicyNoMask,Premium  */
             List<JSONObject> policyList = DatabaseHelper.getPolicyForUpdatePolicy(agencyDetails);
             if (policyList != null && !policyList.isEmpty()) {
-
+                Connection connection = DatabaseHelper.getConnection();
                 for(JSONObject policyObject : policyList ) {
                     String str1 = String.valueOf(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()));
                     String str2 = policyObject.getString("PolicyNoMask");
@@ -390,7 +415,7 @@ public class AgentServiceImpl implements AgentService {
                             .build();
 
                     Response response = client.newCall(request).execute();
-                    String token = response.body().string();
+                    String token = response.body().string().replaceAll("[\\n\\r]", "");
                     String str5= Constants.decodeResponse(token);
 
                     JSONObject jObject = new JSONObject(str5);
@@ -409,12 +434,7 @@ public class AgentServiceImpl implements AgentService {
                         }
 
                         /** updating values */
-                        try (Connection connection = DatabaseHelper.getConnection();
-                             Statement ignored = connection.createStatement()) {
-                            DatabaseHelper.updateMaskPolicyNo(connection, values, policyObject.getString("PolicyNo"), policyObject.getString("Premium"));
-                        } catch (SQLException e) {
-                            System.out.println("Error getting while connecting database");
-                        }
+                        DatabaseHelper.updateMaskPolicyNo(connection, values, policyObject.getString("PolicyNo"), policyObject.getString("Premium"));
                     }
                 };
                 responseObject.setIsError(false);
@@ -442,7 +462,7 @@ public class AgentServiceImpl implements AgentService {
         if (StringUtils.isNotEmpty(username)) {
             List<JSONObject> policyList = new ArrayList<>();
             try {
-                policyList = DatabaseHelper.getAllPolicies();
+                policyList = DatabaseHelper.getAllPolicies(username);
             } catch (Exception e) {
                 System.out.println("policy fetching error");
             }
@@ -451,23 +471,6 @@ public class AgentServiceImpl implements AgentService {
 
                 // Create a directory named "json_files" in the user's home directory
                 Path directoryPath = Paths.get(System.getProperty("user.home"));
-//                if (!Files.exists(directoryPath)) {
-//                    try {
-//                        Files.createDirectories(directoryPath);
-//                    } catch (IOException e) {
-//                        /** fall back solution */
-//                        directoryPath = Paths.get("C:", "json_files");
-//                        if (!Files.exists(directoryPath)) {
-//                            try {
-//                                Files.createDirectories(directoryPath);
-//                            } catch (IOException exception) {
-//                                exception.printStackTrace();
-//                            }
-//                        }
-//                    }
-//                }
-
-                // Construct the file path inside the "json_files" directory
                 Path filePath = directoryPath.resolve(fileName);
 
                 try {
