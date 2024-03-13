@@ -2,6 +2,7 @@
 
 <?import io.github.palexdev.materialfx.controls.MFXButton?>
 <?import io.github.palexdev.materialfx.controls.MFXComboBox?>
+<?import io.github.palexdev.materialfx.controls.MFXPasswordField?>
 <?import io.github.palexdev.materialfx.controls.MFXProgressSpinner?>
 <?import io.github.palexdev.materialfx.controls.MFXTextField?>
 <?import javafx.scene.control.DatePicker?>
@@ -39,7 +40,7 @@
                         <MFXComboBox fx:id="agency" editable="true" floatMode="ABOVE" floatingText="Agency" layoutX="41.0" layoutY="66.0" prefHeight="48.0" prefWidth="173.0" />
                         <MFXTextField fx:id="agencyName" floatMode="ABOVE" floatingText="Agency Name" layoutX="229.0" layoutY="66.0" prefHeight="48.0" prefWidth="173.0" />
                         <MFXTextField fx:id="username" floatMode="ABOVE" floatingText="Username" layoutX="41.0" layoutY="144.0" prefHeight="48.0" prefWidth="173.0" />
-                        <MFXTextField fx:id="password" floatMode="ABOVE" floatingText="Password" layoutX="229.0" layoutY="144.0" prefHeight="48.0" prefWidth="173.0" />
+                        <MFXPasswordField fx:id="password" floatMode="ABOVE" floatingText="Password" layoutX="229.0" layoutY="144.0" prefHeight="48.0" prefWidth="173.0" />
                         <MFXButton fx:id="nbDownloadButton" layoutX="101.0" layoutY="345.0" onAction="#onButtonClick" prefHeight="35.0" prefWidth="250.0" style="-fx-background-color: #1976d2;" text="NB Download" textAlignment="CENTER" textFill="WHITE">
                            <font>
                               <Font size="15.0" />
@@ -77,7 +78,7 @@
                   <Pane fx:id="popupPage" prefHeight="600.0" prefWidth="537.0" visible="false">
                      <children>
                         <Label fx:id="popupLabelMessage" layoutX="127.0" layoutY="45.0" prefHeight="35.0" prefWidth="257.0" />
-                        <MFXTextField fx:id="otpText" alignment="TOP_LEFT" floatMode="ABOVE" floatingText="Enter OTP !" layoutX="152.0" layoutY="97.0" prefHeight="68.0" prefWidth="207.0" promptText="OTP" style="-fx-background-color: white;" />
+                        <MFXTextField fx:id="otpText" alignment="TOP_LEFT" floatMode="ABOVE" floatingText="Enter OTP !" layoutX="152.0" layoutY="97.0" prefHeight="68.0" prefWidth="207.0" promptText="OTP" />
                         <MFXButton fx:id="otpSubmitButton" buttonType="RAISED" layoutX="220.0" layoutY="196.0" onAction="#onOTPSubmitButtonClick" prefHeight="35.0" prefWidth="71.0" rippleColor="WHITE" style="-fx-background-color: #1976d2;" text="Submit" textAlignment="CENTER" textFill="WHITE">
                            <font>
                               <Font size="15.0" />

@@ -6,8 +6,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.net.URL;
-import java.nio.file.Paths;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,23 +13,10 @@ import java.util.List;
 import static com.micro.pd.constants.QueryConstant.*;
 
 public class DatabaseHelper {
-    private static final String DATABASE_NAME = "pd.db";
-    public static final String JDBC_URL = "jdbc:sqlite:" + DATABASE_NAME;
+    public static final String JDBC_URL = "jdbc:sqlite:" + System.getProperty("user.home") + "/pd.db";
 
     public static Connection getConnection() throws SQLException {
-//        if(StringUtils.isEmpty(JDBC_URL)) {
-//            String dbPath = "/pd.db";
-//            URL dbUrl = DatabaseHelper.class.getResource(dbPath);
-//            if (dbUrl != null) {
-//                try {
-//                    /** Convert the URL to a file path */
-//                    String filePath = Paths.get(dbUrl.toURI()).toAbsolutePath().toString();
-//                    JDBC_URL = "jdbc:sqlite:" + filePath;
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//        }
+
         return DriverManager.getConnection(JDBC_URL);
     }
 
@@ -342,7 +327,7 @@ public class DatabaseHelper {
             try (PreparedStatement preparedStatement = connection.prepareStatement(query.toString())) {
                 int parameterIndex = 1;
                 setParameter(preparedStatement, parameterIndex++, values.getString("PolicyNo"));
-                setParameter(preparedStatement, parameterIndex, policyNoMask);
+                setParameter(preparedStatement, parameterIndex++, policyNoMask);
                 setParameter(preparedStatement, parameterIndex, premium);
                 preparedStatement.executeUpdate();
             } catch (SQLException e) {
@@ -351,11 +336,12 @@ public class DatabaseHelper {
         }
     }
 
-    public static List<JSONObject> getAllPolicies() {
+    public static List<JSONObject> getAllPolicies(String username) {
         List<JSONObject> policyList = new ArrayList<>();
         String query = GET_Policy_calender_Table_Data;
         try (Connection connection = getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, username);
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 JSONObject policyObject = new JSONObject();
